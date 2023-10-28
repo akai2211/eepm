@@ -66,7 +66,7 @@ regular_unpack()
         epm assure $prg $pkg || fatal "Try install $pkg package for $prg unpack command."
     fi
 
-    docmd $prg $opt $file || fatal
+    docmd "$prg" $opt "$file" || fatal
 }
 
 
@@ -104,8 +104,8 @@ esac
 # TODO: check ext
 # TODO: check file existence
 # TODO: check by content
-for f in $@ ; do
-    TYPE=$(get_archive_ext $f) || TYPE=$(is_plain_text $f) || { warning "Skipping unrecognized $f" ; continue ; }
+for f in "$@" ; do
+    TYPE=$(get_archive_ext "$f") || TYPE=$(is_plain_text "$f") || { warning "Skipping unrecognized $f" ; continue ; }
     case $TYPE in
         gz)
             # TODO: move pigz support to patool when it supports stdout output
