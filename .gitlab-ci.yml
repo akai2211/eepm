@@ -1,0 +1,26 @@
+scheduled_ci:
+  stage: build
+  tags:
+    - access
+  script:
+    - apt-get update && apt-get install -y git wget
+    - bash gen-ci.sh > .gitlab-ci.yml
+    - git config user.name "CI Bot"
+    - git config user.email "ci@etersoft.ru"
+    - git checkout -B ci-generated
+    - git add .gitlab-ci.yml
+    - git commit -m "update gitlab-ci.yml from epmp list" --allow-empty
+    - git remote set-url origin https://vanomj:$CI_PUSH_TOKEN@gitlab.eterfund.ru/vanomj/eepm.git
+    - git push -f origin ci-generated
+  only:
+    - schedules
+
+generate_ci:
+  stage: build
+  tags:
+    - access
+  only:
+    - devel
+  script:
+    - apt-get update && apt-get install -y git wget
+    - bash ci-diff-apps.sh
