@@ -7,13 +7,10 @@ echo "  - test"
 echo ""
 
 if [ "$#" -gt 0 ]; then
-  # Run changed app
-  apps=("$@")
+  apps=("$@")        # only changed apps
 else
-  # Run all (regular testing)
-  apps=$(./bin/epmp --short 2>/dev/null || true)
+  apps=$(./bin/epmp --short 2>/dev/null || true)  # all
 fi
-
 
 for app in $apps; do
   job_name="test_${app//[^a-zA-Z0-9_]/_}"
@@ -25,7 +22,31 @@ for app in $apps; do
   echo "  script:"
   echo "    - cd bin"
   echo "    - ./epmu"
-  echo "    - ./epmi -y wget glibc-pthread"
-  echo "    - ./epm play --auto --verbose --ipfs $app"
+  echo "    - ./epmi -y wget glibc-pthread git kubo coreutils"
+  echo "    - export LOGDIR=\"\$CI_PROJECT_DIR\""
+  echo "    - mkdir -p \"\$CI_PROJECT_DIR/epm-play-versions\" \"\$CI_PROJECT_DIR/epm-errors\" \"\$CI_PROJECT_DIR/epm-logs\" \"\$CI_PROJECT_DIR/epm-requires\""
+  echo "    - export EGET_IPFS_FORCE_LOAD=1"
+  echo "    - export EPM_IPFS_DB_UPDATE_SKIPPING=1"
+  echo "    - export EGET_IPFS_API=/ip4/91.232.225.49/tcp/5001"
+  echo "    - EPM=\$(pwd)/epm bash ../tests/update_versions.sh --ipfs --force --slow \"$app\""
+  echo "    - |"
+  echo "      PKG=\$(./epm play --package-name \"$app\")"
+  echo "      VF=\"\$CI_PROJECT_DIR/epm-play-versions/\$PKG\""
+  echo "      if [ ! -s \"\$VF\" ]; then"
+  echo "        TMP=\$(mktemp)"
+  echo "        if ./epm print version for package \"\$PKG\" >\"\$TMP\" 2>>\"\$CI_PROJECT_DIR/epm-errors/\$PKG\"; then"
+  echo "          if [ -s \"\$TMP\" ]; then mv -f \"\$TMP\" \"\$VF\"; else rm -f \"\$TMP\"; fi"
+  echo "        else"
+  echo "          rm -f \"\$TMP\""
+  echo "        fi"
+  echo "      fi"
+  echo "  artifacts:"
+  echo "    when: always"
+  echo "    expire_in: 2 days"
+  echo "    paths:"
+  echo "      - \$CI_PROJECT_DIR/epm-play-versions"
+  echo "      - \$CI_PROJECT_DIR/epm-errors"
+  echo "      - \$CI_PROJECT_DIR/epm-logs"
+  echo "      - \$CI_PROJECT_DIR/epm-requires"
   echo ""
 done
