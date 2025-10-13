@@ -28,7 +28,7 @@ if [ -n "$CHANGED_APPS" ]; then
   git add .gitlab-ci.yml
   git commit -m "update gitlab-ci.yml from epmp list" --allow-empty
   git remote set-url origin https://vanomj:$CI_PUSH_TOKEN@gitlab.eterfund.ru/vanomj/eepm.git
-  git push -f origin ci-generated
+  git push -f origin ci-generated 2>/dev/null
 else
   echo "No relevant changes in play.d/, pack.d/, or repack.d/. Skipping."
 fi
