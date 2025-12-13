@@ -3,6 +3,8 @@ set -euo pipefail
 
 # args
 APP="${1:?usage: tests/run_one_ci.sh <app>}"
+shift || true
+EPM_FLAGS="$*"
 
 # layout
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"       # .../repo/tests
@@ -15,47 +17,60 @@ PLAY_DIR="$LOGDIR/epm-play-versions"
 ERR_DIR="$LOGDIR/epm-errors"
 LOG_DIR="$LOGDIR/epm-logs"
 REQ_DIR="$LOGDIR/epm-requires"
+
 mkdir -p "$PLAY_DIR" "$ERR_DIR" "$LOG_DIR" "$REQ_DIR"
 
-# deps & env
+# env
 cd "$REPO_ROOT/bin"
-./epmu
-./epmi -y wget glibc-pthread git kubo coreutils
 
-export LOGDIR
-export EGET_IPFS_FORCE_LOAD=1
-export EPM_IPFS_DB_UPDATE_SKIPPING=1
-export EGET_IPFS_API=/ip4/91.232.225.49/tcp/5001
+# IPFS db 
+USE_IPFS=0
+for arg in $EPM_FLAGS; do
+  [ "$arg" = "--ipfs" ] && USE_IPFS=1
+done
+
+if [ "$USE_IPFS" -eq 1 ]; then
+  echo "IPFS mode enabled"
+
+  IPFS_DB_DIR="${CI_IPFS_DB_DIR:-$PROJECT_DIR/.cache/ipfs/db}"
+  mkdir -p "$IPFS_DB_DIR"
+  export IPFS_PATH="$IPFS_DB_DIR"
+
+  export EGET_IPFS_FORCE_LOAD=1
+  export EPM_IPFS_DB_UPDATE_SKIPPING=1
+  export EGET_IPFS_API=/ip4/91.232.225.49/tcp/5001
+else
+  echo "IPFS mode disabled (site repositories)"
+fi
 
 # run updater 
+echo "Installing $APP $EPM_FLAGS"
+
 set +e
-EPM="$(pwd)/epm" bash "$SCRIPT_DIR/update_versions.sh" --ipfs --force --slow "$APP"
-update_exit_code=$?
+./epm play $EPM_FLAGS --auto "$APP" 2>&1 | tee "$LOG_DIR/$APP.log"
+rc=$?
 set -e
 
-# determine package name & version file path
-package_name="$(./epm play --package-name "$APP")"
-version_file_path="$PLAY_DIR/$package_name"
+# resul
 
-# if version file missing, try to write it ourselves
-if [ ! -s "$version_file_path" ]; then
-  tmp_file="$(mktemp)"
-  ./epm print version for package "$package_name" >"$tmp_file" 2>>"$ERR_DIR/$package_name" || true
-  if [ -s "$tmp_file" ]; then
-    mv -f "$tmp_file" "$version_file_path"
-  else
-    rm -f "$tmp_file"
-  fi
-fi
+if [ "$rc" -eq 0 ]; then
+  
+  echo "V $APP: PASS"
 
-# final result: success if version file exists
-if [ -s "$version_file_path" ]; then
-  echo "V $APP: Test PASS for version -> $version_file_path"
-  final_exit_code=0
+  package_name="$(./epm play --package-name "$APP")"
+  version_file="$PLAY_DIR/$package_name"
+
+  ./epm print version for package "$package_name" \
+    >"$PLAY_DIR/$package_name" \
+    2>"$ERR_DIR/$package_name" || true
+  
+  ./epm req "$package_name" >"$REQ_DIR/$package_name" 2>&1 || true  
+
 else
-  echo "X $APP: Test FAILED"
-  final_exit_code="$update_exit_code"
+  echo "X $APP: FAIL"
+
+  mv -f "$LOG_DIR/$APP.log" "$ERR_DIR/$APP.log"
 fi
 
-echo "exit code: $final_exit_code"
-exit "$final_exit_code"
+echo "Exit code: $rc"
+exit "$rc"
