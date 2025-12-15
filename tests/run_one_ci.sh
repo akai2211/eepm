@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+
+# detect OS
+. /etc/os-release
+CI_SYSTEM_ID="$ID-$VERSION_ID"
+
 # args
 APP="${1:?usage: tests/run_one_ci.sh <app>}"
 shift || true
@@ -11,7 +16,8 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"       # .../repo/tests
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"         # .../repo
 
 PROJECT_DIR="${CI_PROJECT_DIR:-$REPO_ROOT}"
-LOGDIR="$PROJECT_DIR"
+RESULTS_ROOT="$PROJECT_DIR/epm-results/$CI_SYSTEM_ID"
+LOGDIR="$RESULTS_ROOT"
 
 PLAY_DIR="$LOGDIR/epm-play-versions"
 ERR_DIR="$LOGDIR/epm-errors"

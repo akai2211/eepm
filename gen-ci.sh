@@ -9,6 +9,7 @@ echo ""
 echo "stages:"
 echo "  - prepare"
 echo "  - test"
+echo "  - summary"
 echo ""
 
 # Determine the list of applications
@@ -17,6 +18,7 @@ if [ "$#" -gt 0 ]; then
 else
   apps=$(./bin/epmp --short 2>/dev/null || true)
 fi
+
 
 for app in $apps; do
   safe_app="${app//[^a-zA-Z0-9_]/_}"
@@ -40,16 +42,14 @@ for app in $apps; do
   echo "    when: always"
   echo "    expire_in: 30 days"
   echo "    paths:"
-  echo "      - epm-play-versions"
-  echo "      - epm-errors"
-  echo "      - epm-logs"
-  echo "      - epm-requires"
+  echo "      - epm-results"
   echo ""
   #
   # --------temp: Stage: test (debian bookworm, IPFS) --------
   #
   echo "test_${safe_app}_debian:"
   echo "  stage: test"
+  echo "  allow_failure: true"
   echo "  image: debian:bookworm"
   echo "  tags:"
   echo "    - access"
@@ -65,10 +65,23 @@ for app in $apps; do
   echo "    when: always"
   echo "    expire_in: 30 days"
   echo "    paths:"
-  echo "      - epm-play-versions"
-  echo "      - epm-errors"
-  echo "      - epm-logs"
-  echo "      - epm-requires"
+  echo "      - epm-results"
   echo ""
 
 done
+#
+# -------- Stage: summary --------
+#
+echo "summary_ci:"
+echo "  stage: summary"
+echo "  image: alt:p11"
+echo "  tags:"
+echo "    - access"
+echo "  when: always"
+echo "  before_script:"
+echo "    - ./bin/epm -y repo set etersoft"
+echo "    - ./bin/epm update"
+echo "    - ./bin/epm -y install git rsync"
+echo "  script:"
+echo "    - bash push-results-ci.sh"
+echo ""
