@@ -6,9 +6,9 @@ set -euo pipefail
 CI_SYSTEM_ID="$ID-$VERSION_ID"
 
 # args
-APP="${1:?usage: tests/run_one_ci.sh <app>}"
+APP="$1"
 
-# layout
+# vars
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
@@ -24,20 +24,18 @@ mkdir -p "$PLAY_DIR" "$ERR_DIR" "$LOG_DIR" "$REQ_DIR"
 
 cd "$REPO_ROOT/bin"
 
-# IPFS is always enabled
-
+# IPFS
 export EPM_IPFS_DB_UPDATE_SKIPPING=1
 export EGET_IPFS_API=/ip4/91.232.225.49/tcp/5001
 
-echo "Installing $APP (IPFS mode)"
+echo "Installing $APP"
 
 set +e
 ./epm play --auto --ipfs "$APP" 2>&1 | tee "$LOG_DIR/$APP.log"
-rc=$?
+rc=${PIPESTATUS[0]}
 set -e
 
 # result
-
 if [ "$rc" -eq 0 ]; then
   echo "V $APP: PASS"
 
@@ -50,7 +48,7 @@ if [ "$rc" -eq 0 ]; then
   ./epm req "$package_name" >"$REQ_DIR/$package_name" 2>&1 || true
 else
   echo "X $APP: FAIL"
-  mv -f "$LOG_DIR/$APP.log" "$ERR_DIR/$APP.log"
+  mv -vf "$LOG_DIR/$APP.log" "$ERR_DIR/$APP.log"
 fi
 
 # cleanup empty error files and dir

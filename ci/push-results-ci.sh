@@ -9,17 +9,17 @@ WORKDIR="results"
 git clone "$RESULTS_REPO_URL" "$WORKDIR"
 cd "$WORKDIR"
 
-# git configuration (mandatory)
+# git configuration
 git config user.name "CI Bot"
 git config user.email "ci@etersoft.ru"
 
 # clean old data
 rm -rf epm-results meta || true
 
-# copy all results (by system)
+# copy all results
 rsync -a "$CI_PROJECT_DIR/epm-results/" epm-results/ || true
 
-# meta
+# ci info
 mkdir -p meta
 echo "$CI_PIPELINE_ID" > meta/pipeline-id
 echo "$CI_COMMIT_SHA" > meta/commit-sha
@@ -32,6 +32,6 @@ git commit -m "CI results: pipeline $CI_PIPELINE_ID" || {
     exit 0
 }
 
-# push via PAT
+# push
 git remote set-url origin "https://vanomj:${CI_PUSH_TOKEN}@gitlab.eterfund.ru/vanomj/epm-play-ci-results.git"
 git push
