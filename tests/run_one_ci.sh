@@ -57,7 +57,7 @@ set +e
 rc=$?
 set -e
 
-# resul
+# result
 
 if [ "$rc" -eq 0 ]; then
   
@@ -76,6 +76,12 @@ else
   echo "X $APP: FAIL"
 
   mv -f "$LOG_DIR/$APP.log" "$ERR_DIR/$APP.log"
+fi
+
+# cleanup empty error files and dir
+if [ -d "$ERR_DIR" ]; then
+  find "$ERR_DIR" -type f -size 0 -delete
+  rmdir "$ERR_DIR" 2>/dev/null || true
 fi
 
 echo "Exit code: $rc"
