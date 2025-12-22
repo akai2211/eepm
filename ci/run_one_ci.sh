@@ -25,7 +25,7 @@ mkdir -p "$PLAY_DIR" "$ERR_DIR" "$LOG_DIR" "$REQ_DIR"
 cd "$REPO_ROOT/bin"
 
 # IPFS is always enabled
-export EGET_IPFS_FORCE_LOAD=1
+
 export EPM_IPFS_DB_UPDATE_SKIPPING=1
 export EGET_IPFS_API=/ip4/91.232.225.49/tcp/5001
 
