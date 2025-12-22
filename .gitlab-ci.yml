@@ -5,7 +5,7 @@ scheduled_ci:
     - access
   script:
     - apt-get update && apt-get install -y git wget
-    - bash gen-ci.sh > .gitlab-ci.yml
+    - bash ci/gen-ci.sh > .gitlab-ci.yml
     - git config user.name "CI Bot"
     - git config user.email "ci@etersoft.ru"
     - git checkout -B ci-generated
@@ -25,4 +25,4 @@ generate_ci:
     - devel
   script:
     - apt-get update && apt-get install -y git wget
-    - bash ci-diff-apps.sh
+    - bash ci/ci-diff-apps.sh
