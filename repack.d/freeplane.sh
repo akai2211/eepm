@@ -14,4 +14,5 @@ fix_desktop_file "/usr/bin/$PRODUCT"
 remove_dir /usr/lib/mime
 
 add_requires java-openjdk
+
 ignore_lib_requires 'libjawt.so'
