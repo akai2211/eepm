@@ -461,11 +461,19 @@ is_installed_by_play()
     [ -n "$pkg" ] || pkg="$PKGNAME"
     [ -n "$pkg" ] || return 1
 
-    # Package must be installed
-    epm status --installed $pkg || return 1
+    # Check exact package first
+    if epm status --installed $pkg ; then
+        epm status --repacked $pkg && return 0
+    fi
 
-    # And must be repacked by us (not from repo or vendor)
-    epm status --repacked $pkg
+    # If BASEPKGNAME is set, check any package matching BASEPKGNAME-*
+    [ -n "$BASEPKGNAME" ] || return 1
+    local i
+    for i in $(epm qp --short "$BASEPKGNAME*" 2>/dev/null) ; do
+        epm status --repacked "$i" && return 0
+    done
+
+    return 1
 }
 
 check_for_product_update()
