@@ -454,6 +454,20 @@ is_repacked_packages()
     done
 }
 
+# Check if package is installed and managed by us (for --installed check)
+is_installed_by_play()
+{
+    local pkg="$1"
+    [ -n "$pkg" ] || pkg="$PKGNAME"
+    [ -n "$pkg" ] || return 1
+
+    # Package must be installed
+    epm status --installed $pkg || return 1
+
+    # And must be repacked by us (not from repo or vendor)
+    epm status --repacked $pkg
+}
+
 check_for_product_update()
 {
     # HACK: check version only by first package (we assume all packages have the same version)
@@ -518,8 +532,7 @@ case "$1" in
         exit
         ;;
     "--installed")
-        #epm installed $PKGNAME
-        is_repacked_packages $PKGNAME
+        is_installed_by_play $PKGNAME
         exit
         ;;
 esac

@@ -404,6 +404,22 @@ __epm_play_install()
    local i RES
    RES=0
 
+   # Handle --installed flag when passed after app name (e.g., "epm play app --installed")
+   local has_installed=0
+   for i in $* ; do
+       [ "$i" = "--installed" ] && has_installed=1 && break
+   done
+
+   if [ "$has_installed" = "1" ] ; then
+       local RES=0
+       while [ -n "$1" ] ; do
+           [ "$1" = "--installed" ] && break
+           __is_app_installed "$1" || RES=1
+           shift
+       done
+       return $RES
+   fi
+
    load_helper epm-check_updated_repo
 
    update_repo_if_needed
