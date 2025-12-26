@@ -849,19 +849,41 @@ calc_sha256sum()
     sha256sum "$1" | awk '{print $1}'
 }
 
+# Get hash value from checksum spec (strips algo: prefix if present)
+# Usage: get_checksum_value "md5hash:abc123" -> "abc123"
+get_checksum_value()
+{
+    echo "$1" | sed 's/^[^:]*://'
+}
+
+# Calculate checksum for file using algorithm from spec
+# Usage: calc_checksum <algo:hash or hash> <file>
+# Supported: md5, md5hash, sha1, sha256, sha512 (default: sha256)
+calc_checksum()
+{
+    local spec="$1"
+    local file="$2"
+    case "${spec%%:*}" in
+        md5|md5hash)
+            md5sum "$file" ;;
+        sha1|sha1hash)
+            sha1sum "$file" ;;
+        sha512|sha512hash)
+            sha512sum "$file" ;;
+        *)
+            sha256sum "$file" ;;
+    esac | awk '{print $1}'
+}
+
 print_sha256sum()
 {
-    if ! is_command sha256sum ; then
-        info "sha256sum is missed, can't print sha256 for packages..."
-        return
-    fi
-
     local checksum=''
     if [ "$1" = "--checksum" ] ; then
         checksum="$2"
         shift 2
-        pcs="$(calc_sha256sum "$1")"
-        [ "$checksum" = "$pcs" ] || fatal "Checksum verification failed. Awaited checksum: $checksum, package checksum: $pcs"
+        local expected="$(get_checksum_value "$checksum")"
+        local pcs="$(calc_checksum "$checksum" "$1")"
+        [ "$expected" = "$pcs" ] || fatal "Checksum verification failed (${checksum%%:*}). Awaited: $expected, got: $pcs"
     fi
 
     local files="$*"
