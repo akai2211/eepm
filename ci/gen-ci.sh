@@ -45,7 +45,7 @@ for app in $apps; do
 done
 
 #
-# -------- Stage: publish_ipfs_db --------
+# -------- Stage: Publish_download_logs --------
 #
 echo "publish_download_logs:"
 echo "  stage: publish_download_logs"
@@ -80,12 +80,12 @@ for app in $apps; do
   safe_app="${app//[^a-zA-Z0-9_]/_}"
 
   #
-  # ALT p11 consumer
+  # ALT sisyphus
   #
   echo "test_${safe_app}_p11:"
   echo "  stage: test"
   echo "  allow_failure: true"
-  echo "  image: alt:p11"
+  echo "  image: alt:sisyphus"
   echo "  tags:"
   echo "    - access"
   echo "  dependencies:"
@@ -106,7 +106,7 @@ for app in $apps; do
   echo ""
 
   #
-  # Debian bookworm consumer
+  # Debian bookworm 
   #
   echo "test_${safe_app}_debian:"
   echo "  stage: test"

@@ -14,7 +14,7 @@ git config user.name "CI Bot"
 git config user.email "ci@etersoft.ru"
 
 # clean old data
-rm -rf epm-results meta || true
+rm -rf epm-results/*/epm-logs epm-results/*/epm-errors meta || true
 
 # copy all results
 rsync -a "$CI_PROJECT_DIR/epm-results/" epm-results/ || true

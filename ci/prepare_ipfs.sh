@@ -8,7 +8,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 PROJECT_DIR="${CI_PROJECT_DIR:-$REPO_ROOT}"
-RESULTS_ROOT="$PROJECT_DIR/ipfs/"
+RESULTS_ROOT="$PROJECT_DIR/ipfs"
 
 ERR_DIR="$RESULTS_ROOT/errors"
 LOG_DIR="$RESULTS_ROOT/logs"

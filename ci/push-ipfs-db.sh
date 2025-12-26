@@ -21,12 +21,15 @@ cd "$WORKDIR"
 git config user.name "CI Bot"
 git config user.email "ci@etersoft.ru"
 
+# clean old data
+rm -rf ipfs/logs/ ipfs/errors/ || true
+
 # prepare dirs
-mkdir -p ipfs/log ipfs/errors ipfs/meta
+mkdir -p ipfs/logs ipfs/errors ipfs/meta
 
 # replace DB and logs
 cp -f ../ipfs/eget-ipfs-db.txt ipfs/eget-ipfs-db.txt
-rsync -a ../ipfs/log/ ipfs/log/ || true
+rsync -a ../ipfs/logs/ ipfs/logs/ || true
 rsync -a ../ipfs/errors/ ipfs/errors/ || true
 
 # meta info
