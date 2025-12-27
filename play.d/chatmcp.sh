@@ -10,6 +10,11 @@ URL="https://github.com/daodao97/chatmcp"
 
 pkgtype="$(epm print info -p)"
 
+if ! is_glibc_enough 2.34 ; then
+    fatal "Версия glibc слишком старая, требуется система с glibc 2.34 и выше."
+fi
+
+
 case "$pkgtype" in
     rpm)
         # chatmcp-0.0.76-linux.rpm
