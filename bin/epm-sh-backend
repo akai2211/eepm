@@ -1,0 +1,68 @@
+#!/bin/sh
+#
+# Copyright (C) 2012-2020, 2025  Etersoft
+# Copyright (C) 2012-2020, 2025  Vitaly Lipatov <lav@etersoft.ru>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+
+VALID_BACKENDS="apt-rpm apt-dpkg apm-rpm stplr aptitude-dpkg deepsolver-rpm urpm-rpm packagekit pkgsrc pkgng redox-pkg emerge pacman yay aura yum-rpm dnf-rpm snappy zypper-rpm mpkg eopkg conary npackd slackpkg homebrew opkg nix apk tce guix termux-pkg aptcyg xbps appget winget"
+
+__get_tpmtype() {
+    local arg="$1"
+    local tpmtype="$(echo "$arg" | cut -d: -f1)"
+
+    # need first three chars
+    echo "$arg" | grep -q "^[a-z][a-z][a-z-]*:" || return
+
+    # aliases
+    [ "$tpmtype" = "pkcon" ] && tpmtype="packagekit"
+    # use same suffix as current PMTYPE for ambiguous backends
+    [ "$tpmtype" = "apt" ] && tpmtype="apt-${PMTYPE#*-}"
+
+    echo "$VALID_BACKENDS" | tr ' ' '\n' | grep -w "^$tpmtype" | head -1
+}
+
+# call: __process_backend_arguments <function> args...
+__process_backend_arguments() {
+    local func="$1"
+    shift
+    local pmtype
+    local name
+    local arg
+    local package_groups
+    declare -A package_groups
+    for arg in "$@"; do
+        pmtype=$PMTYPE
+        name="$arg"
+        case "$arg" in
+            *:*)
+                local tpmtype="$(__get_tpmtype "$arg")"
+                if [ -n "$tpmtype" ] ; then
+                    pmtype=$tpmtype
+                    # copied from distr_info
+                    if [ "$pmtype" = "dnf-rpm" ] && a= dnf --version | grep -qi "dnf5" ; then
+                        pmtype="dnf5-rpm"
+                    fi
+                    name=$(echo "$arg" | cut -d: -f2)
+                fi
+                ;;
+        esac
+        package_groups["$pmtype"]+="$name "
+    done
+
+    for pmtype in "${!package_groups[@]}"; do
+        (PMTYPE="$pmtype" PPARGS=1 $func ${package_groups[$pmtype]})
+    done
+}

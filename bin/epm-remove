@@ -18,6 +18,7 @@
 #
 
 load_helper epm-sh-altlinux
+load_helper epm-sh-backend
 load_helper epm-query
 load_helper epm-print
 load_helper epm-requires
@@ -90,6 +91,12 @@ epm_remove_low()
 epm_remove_names()
 {
     [ -z "$1" ] && return
+
+    # check some like nix: prefix, PPARGS for stop possible recursion
+    if echo "$*" | grep -q -E '(^| )[a-z][a-z][a-z]*:' && [ -z "$PPARGS" ] ; then
+        __process_backend_arguments epm_remove_names "$@"
+        return
+    fi
 
     warmup_bases
 
@@ -320,6 +327,12 @@ epm_remove()
 {
     if [ -n "$show_command_only" ] ; then
         epm_print_remove_command $pkg_filenames
+        return
+    fi
+
+    # handle backend:package syntax directly
+    if echo "$pkg_names" | grep -q -E '(^| )[a-z][a-z][a-z]*:' ; then
+        epm_remove_names $pkg_names
         return
     fi
 

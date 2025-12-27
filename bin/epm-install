@@ -19,6 +19,7 @@
 
 load_helper epm-sh-altlinux
 load_helper epm-sh-install
+load_helper epm-sh-backend
 load_helper epm-query
 load_helper epm-assure
 load_helper epm-repack
@@ -65,17 +66,6 @@ __separate_sudocmd()
     return 0
 }
 
-VALID_BACKENDS="apt-rpm apt-dpkg apm-rpm stplr aptitude-dpkg deepsolver-rpm urpm-rpm packagekit pkgsrc pkgng redox-pkg emerge pacman yay aura yum-rpm dnf-rpm snappy zypper-rpm mpkg eopkg conary npackd slackpkg homebrew opkg nix apk tce guix termux-pkg aptcyg xbps appget winget"
-__get_tpmtype() {
-    local arg="$1"
-    local tpmtype="$(echo "$arg" | cut -d: -f1)"
-
-    # need first three chars
-    echo "$arg" | grep -q "^[a-z][a-z][a-z-]*:" || return
-
-    echo "$VALID_BACKENDS" | tr ' ' '\n' | grep -w "^$tpmtype"
-}
-
 # TODO: get list
 VALID_BRANCH="p8 p9 p10 p11 Sisyphus c10f2"
 __set_repo_name() {
@@ -88,37 +78,6 @@ __set_repo_name() {
 
     trepo="$(echo "$VALID_BRANCH" | tr ' ' '\n' | grep -w "^$trepo")"
     [ -n "$trepo" ] && repo="$trepo" && name=$(echo "$arg" | cut -d/ -f2)
-}
-
-
-process_package_arguments() {
-    local pmtype
-    local name
-    local arg
-    local package_groups
-    declare -A package_groups
-    for arg in "$@"; do
-        pmtype=$PMTYPE
-        name="$arg"
-        case "$arg" in
-            *:*)
-                local tpmtype="$(__get_tpmtype "$arg")"
-                if [ -n "$tpmtype" ] ; then
-                    pmtype=$tpmtype
-                    # copied from distr_info
-                    if [ "$pmtype" = "dnf-rpm" ] && a= dnf --version | grep -qi "dnf5" ; then
-                        pmtype="dnf5-rpm"
-                    fi
-                    name=$(echo "$arg" | cut -d: -f2)
-                fi
-                ;;
-        esac
-        package_groups["$pmtype"]+="$name "
-    done
-
-    for pmtype in "${!package_groups[@]}"; do
-        (PMTYPE="$pmtype" PPARGS=1 epm_install_names ${package_groups[$pmtype]})
-    done
 }
 
 
@@ -163,7 +122,7 @@ epm_install_names()
 
     # check some like nix: prefix, PPARGS for stop possible recursion. TODO
     if echo "$*" | grep -q -E '(^| )[a-z][a-z][a-z]*:' && [ -z "$PPARGS" ] ; then
-        process_package_arguments "$@"
+        __process_backend_arguments epm_install_names "$@"
         return
     fi
 
