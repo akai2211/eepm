@@ -275,8 +275,28 @@ check_option()
     return 0
 }
 
+# Check if daemon-reload is needed and run it automatically
+check_daemon_reload()
+{
+        local service="$1"
+        [ -z "$service" ] && return 0
+        # Check NeedDaemonReload property (read-only, no sudo needed)
+        if $SYSTEMCTL $SYSTEMCTL_ARGS show -p NeedDaemonReload "$service" 2>/dev/null | grep -q "NeedDaemonReload=yes" ; then
+                info "Unit file changed, running daemon-reload..."
+                $SYSTEMCTL_RUNNER $SYSTEMCTL $SYSTEMCTL_ARGS daemon-reload
+        fi
+}
+
 run_systemctl()
 {
+        local cmd="$1"
+        local service="$2"
+        # Auto daemon-reload before start/restart/reload
+        case "$cmd" in
+                start|restart|reload|try-restart)
+                        check_daemon_reload "$service"
+                        ;;
+        esac
         $SYSTEMCTL_RUNNER $SYSTEMCTL $SYSTEMCTL_ARGS "$@"
 }
 
