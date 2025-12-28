@@ -134,11 +134,13 @@ intersection()
 {
         local RES=""
         local i j
+        set -f
         for i in $2 ; do
             for j in $1 ; do
                 [ "$i" = "$j" ] && RES="$RES $i"
             done
         done
+        set +f
         strip "$RES"
 }
 
@@ -193,9 +195,11 @@ reg_rqremove()
 {
         local i
         local RES=""
+        set -f
         for i in $2 ; do
                 [ "$i" = "$1" ] || RES="$RES $i"
         done
+        set +f
         strip "$RES"
 }
 
@@ -240,14 +244,13 @@ reg_wordexclude()
         strip "$RES"
 }
 
+# internal function
 if_contain()
 {
         local i
-        set -f
         for i in $2 ; do
             [ "$i" = "$1" ] && return
         done
-        set +f
         return 1
 }
 
@@ -284,12 +287,14 @@ reg_include()
 contains()
 {
     local word
+    set -f
     for word in $1 ; do
         case " $2 " in
             *" $word "*) ;;
-            *) return 1 ;;
+            *) set +f ; return 1 ;;
         esac
     done
+    set +f
     return 0
 }
 
