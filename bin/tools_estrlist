@@ -106,7 +106,8 @@ list()
 count()
 {
         set -f
-        list $@ | wc -l
+        set -- $@
+        echo $#
         set +f
 }
 
