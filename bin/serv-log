@@ -49,7 +49,13 @@ serv_log()
 
     case $SERVICETYPE in
         systemd)
-            sudocmd journalctl -b -u "$SERVICE" "$@"
+            if [ "$1" = "-f" ] ; then
+                shift
+                sudocmd journalctl -f -u "$SERVICE" "$@"
+            else
+                # -e to jump to end of log
+                sudocmd journalctl -e -u "$SERVICE" "$@"
+            fi
             ;;
         *)
             case $BASEDISTRNAME in
