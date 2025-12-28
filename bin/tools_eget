@@ -500,6 +500,7 @@ while [ -n "$1" ] ; do
                 shift
                 argvalue="$(printf '%s' "$1" | tr -d ' ')"
             fi
+            [ -z "$argvalue" ] && fatal "Error: --header requires an argument"
             WGETHEADER="--header=$argvalue"
             CURLHEADER="--header $argvalue"
             AXELHEADER="--header=$argvalue"
@@ -509,6 +510,7 @@ while [ -n "$1" ] ; do
                 shift
                 argvalue="$1"
             fi
+            [ -z "$argvalue" ] && fatal "Error: --output-dir requires an argument"
             CURLOUTPUTDIR="--create-dirs --output-dir $argvalue"
             WGETOUTPUTDIR="-P $argvalue"
             ARIA2OUTPUTDIR="-d $argvalue"
@@ -590,6 +592,7 @@ while [ -n "$1" ] ; do
                 shift
                 argvalue="$1"
             fi
+            [ -z "$argvalue" ] && fatal "Error: --input-file requires an argument"
             INPUTFILE="$argvalue"
             ;;
         -T|--timeout)
@@ -597,6 +600,7 @@ while [ -n "$1" ] ; do
                 shift
                 argvalue="$1"
             fi
+            [ -z "$argvalue" ] && fatal "Error: --timeout requires an argument"
             WGETTIMEOUT="--timeout $argvalue"
             CURLMAXTIME="--max-time $argvalue"
             AXELTIMEOUT="--timeout=$argvalue"
@@ -606,6 +610,7 @@ while [ -n "$1" ] ; do
                 shift
                 argvalue="$1"
             fi
+            [ -z "$argvalue" ] && fatal "Error: --read-timeout requires an argument"
             WGETREADTIMEOUT="--read-timeout $argvalue"
             if [ -z "$CURLMAXTIME" ] ; then
                 CURLMAXTIME="--max-time $argvalue"
@@ -627,6 +632,7 @@ while [ -n "$1" ] ; do
                 shift
                 argvalue="$1"
             fi
+            [ -z "$argvalue" ] && fatal "Error: --tries requires an argument"
 
             case "$argvalue" in
                 0|inf)
@@ -645,6 +651,7 @@ while [ -n "$1" ] ; do
                 shift
                 argvalue="$1"
             fi
+            [ -z "$argvalue" ] && fatal "Error: --load-cookies requires an argument"
             WGETLOADCOOKIES="--load-cookies $argvalue"
             CURLCOOKIE="--cookie $argvalue"
             ;;
