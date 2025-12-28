@@ -55,12 +55,21 @@ isempty()
 
 first()
 {
-        echo "$*" | cut -f1 -d" "
+        set -f
+        set -- $@
+        echo "$1"
+        set +f
 }
 
 last()
 {
-        echo "$*" | xargs -n1 echo 2>/dev/null | tail -n1
+        local i last
+        set -f
+        for i in $@ ; do
+                last="$i"
+        done
+        set +f
+        echo "$last"
 }
 
 firstupper()
