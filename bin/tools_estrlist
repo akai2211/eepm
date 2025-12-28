@@ -31,21 +31,33 @@ fatal()
         exit 1
 }
 
-filter_strip_spaces()
+strip()
 {
-        # possible use just
-        #xargs echo
-        sed -e "s| \+| |g" -e "s|^ ||" -e "s| \$||"
+        set -f
+        set -- $@
+        echo "$*"
+        set +f
 }
 
+# legacy
 strip_spaces()
 {
-        echo "$*" | filter_strip_spaces
+        strip "$@"
+}
+
+# deprecated: use 'strip' instead
+# legacy, line-by-line processing
+filter_strip_spaces()
+{
+        local line
+        while read -r line ; do
+                strip "$line"
+        done
 }
 
 is_empty()
 {
-        [ "$(strip_spaces "$*")" = "" ]
+        [ "$(strip "$*")" = "" ]
 }
 
 isempty()
@@ -114,7 +126,7 @@ count()
 union()
 {
         set -f
-        strip_spaces $(list $@ | sort -u)
+        strip $(list $@ | sort -u)
         set +f
 }
 
@@ -127,7 +139,7 @@ intersection()
                 [ "$i" = "$j" ] && RES="$RES $i"
             done
         done
-        strip_spaces "$RES"
+        strip "$RES"
 }
 
 uniq()
@@ -161,7 +173,7 @@ reg_remove()
                 echo "$i" | grep -q "^$1$" || RES="$RES $i"
         done
         set +f
-        strip_spaces "$RES"
+        strip "$RES"
 }
 
 # remove_from_list "1." "11 12 21 22" -> "21 22"
@@ -174,7 +186,7 @@ reg_wordremove()
                 echo "$i" | grep -q -w "$1" || RES="$RES $i"
         done
         set +f
-        strip_spaces "$RES"
+        strip "$RES"
 }
 
 reg_rqremove()
@@ -184,7 +196,7 @@ reg_rqremove()
         for i in $2 ; do
                 [ "$i" = "$1" ] || RES="$RES $i"
         done
-        strip_spaces "$RES"
+        strip "$RES"
 }
 
 # Args: LIST1 LIST2
@@ -199,7 +211,7 @@ exclude()
                 RES="$(reg_rqremove "$i" "$RES")"
         done
         set +f
-        strip_spaces "$RES"
+        strip "$RES"
 }
 
 # regexclude_list "22 1." "11 12 21 22" -> "21"
@@ -212,7 +224,7 @@ reg_exclude()
                 RES="$(reg_remove "$i" "$RES")"
         done
         set +f
-        strip_spaces "$RES"
+        strip "$RES"
 }
 
 # regexclude_list "22 1." "11 12 21 22" -> "21"
@@ -225,7 +237,7 @@ reg_wordexclude()
                 RES=$(reg_wordremove "$i" "$RES")
         done
         set +f
-        strip_spaces "$RES"
+        strip "$RES"
 }
 
 if_contain()
@@ -251,7 +263,7 @@ difference()
             if_contain $i "$1" || RES="$RES $i"
         done
         set +f
-        strip_spaces "$RES"
+        strip "$RES"
 }
 
 
@@ -266,7 +278,7 @@ reg_include()
                 echo "$i" | grep -q -w "$1" && RES="$RES $i"
         done
         set +f
-        strip_spaces "$RES"
+        strip "$RES"
 }
 
 contains()
@@ -300,9 +312,7 @@ help()
         echo "estrlist developed for string list operations. See also cut, join, paste..."
         echo "Usage: $0 <command> [args]"
         echo "Commands:"
-        echo "  strip_spaces [args]               - remove extra spaces"
-# TODO: add filter
-#        echo "  filter_strip_spaces               - remove extra spaces from words from standart input"
+        echo "  strip [args]                      - remove extra spaces"
 #        echo "  reg_remove  <PATTERN> [word list] - remove words containing a match to the given PATTERN (grep notation)"
 #        echo "  reg_wordremove  <PATTERN> [word list] - remove words containing a match to the given PATTERN (grep -w notation)"
         echo "  exclude <list1> <list2>           - print list2 items exclude list1 items"
@@ -324,7 +334,12 @@ help()
         echo "  firstupper <word list>            - print the words with first letter of each in upper case"
         echo "  tolower <word list>               - print the words in lower case"
         echo
+        echo "Legacy:"
+        echo "  strip_spaces                      - alias for strip"
+        echo
         echo "Examples:"
+        example strip "  hello   world  "
+        echo "echo '  hello   world  ' | \$0 strip -"
 #        example reg_remove "1." "11 12 21 22"
 #        example reg_wordremove "1." "11 12 21 22"
         example exclude "1 3" "1 2 3 4"
@@ -356,7 +371,7 @@ if [ "$COMMAND" = "-h" ] || [ "$COMMAND" = "--help" ] ; then
         COMMAND="help"
 fi
 
-#
+# command aliases
 case "$COMMAND" in
     reg_remove|reg_wordremove)
         fatal "obsoleted command $COMMAND"
