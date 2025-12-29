@@ -31,9 +31,9 @@ case "$pkgtype" in
 esac
 
 if [ "$VERSION" = "*" ] ; then
-    PKGURL=$(get_github_url "https://github.com/TriliumNext/Notes/" "TriliumNextNotes-*-linux-$arch.$pkgtype")
+    PKGURL=$(get_github_url "https://github.com/TriliumNext/Trilium" "TriliumNotes-*-linux-$arch.$pkgtype")
 else
-    PKGURL="https://github.com/TriliumNext/Notes/releases/download/v$VERSION/TriliumNextNotes-v$VERSION-linux-$arch.$pkgtype"
+    PKGURL="https://github.com/TriliumNext/Trilium/releases/download/v$VERSION/TriliumNotes-v$VERSION-linux-$arch.$pkgtype"
 fi
 
 install_pkgurl
