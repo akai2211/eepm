@@ -294,6 +294,11 @@ __epm_play_update()
             if ! __is_app_installed "$i" ; then
                 continue
             fi
+            local pkgname="$(__get_app_package "$i")"
+            if [ -n "$pkgname" ] && epm mark checkhold "$pkgname" 2>/dev/null ; then
+                info "Skipping $i: package $pkgname is on hold"
+                continue
+            fi
         prescription="$i"
         if ! has_play_script $prescription ; then
             warning "Can't find executable play script for $prescription. Try epm play --remove $prescription if you don't need it anymore."
