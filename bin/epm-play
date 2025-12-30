@@ -254,6 +254,7 @@ Options:
     --remove <app>        - uninstall <app>
     --update [<app>|all]  - update <app> (or all installed apps) if there is new version
     --latest <app>        - forced to install the latest version of the application
+    --print-url <app>     - print download URL for the app (do not install)
     --list                - list all installed apps
     --list-all            - list all available apps
     --list-scripts        - list all available scripts
@@ -625,6 +626,10 @@ case "$1" in
     --latest)
         shift
         export latest="true"
+        ;;
+    --print-url)
+        shift
+        export EPM_OPTIONS="$EPM_OPTIONS --print-url"
         ;;
     -*)
         fatal "Unknown option $1"
