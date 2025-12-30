@@ -4,6 +4,7 @@
 echo "$EPM_OPTIONS" | grep -q -- "--force" && force="--force"
 echo "$EPM_OPTIONS" | grep -q -- "--auto" && auto="--auto"
 echo "$EPM_OPTIONS" | grep -q -- "--latest" && latest="true"
+echo "$EPM_OPTIONS" | grep -q -- "--print-url" && print_url="true"
 [ -n "$EGET_IPFS_DB" ] && ipfs="true"
 
 
@@ -143,6 +144,11 @@ install_pkgurl()
 
     [ -n "$PKGURL" ] || fatal "Can't get package URL. Try use epm play --latest <app> to get latest version."
 
+    if [ -n "$print_url" ] ; then
+        echo "$PKGURL"
+        exit 0
+    fi
+
     epm install $repack $PKGURL "$@" || exit
 }
 
@@ -157,6 +163,11 @@ install_pack_pkgurl()
     [ "$pkgtype" = "rpm" ] && repack='--repack'
 
     [ -n "$PKGURL" ] || fatal "Can't get package URL. Try use epm play --latest <app> to get latest version."
+
+    if [ -n "$print_url" ] ; then
+        echo "$PKGURL"
+        exit 0
+    fi
 
     epm pack $repack --install $PKGNAME "$PKGURL" "$@"
 }
@@ -218,8 +229,8 @@ __convert_glob__to_regexp()
 get_github_release_info() {
     local url="$1"
     local user_and_repo=${url#https://github.com/}
-    
-    eget -O- "https://api.github.com/repos/${user_and_repo%/}/releases"
+
+    fetch_url "https://api.github.com/repos/${user_and_repo%/}/releases"
 }
 
 get_github_url()
