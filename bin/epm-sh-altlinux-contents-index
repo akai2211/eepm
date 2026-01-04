@@ -33,7 +33,9 @@ get_alt_repo_path()
     local BN3=$(basename $DN3) # ALTLinux/
 
     [ "$BN1" = "branch" ] && echo "$BN3/$BN2/$BN1/$BN0" && return
-    [ "$BN1" = "Sisyphus" ] && echo "$BN2/$BN1/$BN0"
+    [ "$BN1" = "Sisyphus" ] && echo "$BN2/$BN1/$BN0" && return
+    # Fallback for non-standard repos: use last 4 path components
+    echo "$BN3/$BN2/$BN1/$BN0"
 }
 
 # convert "http://download.etersoft.ru/pub/ALTLinux/p8/branch x86_64" to /tmp/epm/ALTLinux/p8/branch/x86_64
