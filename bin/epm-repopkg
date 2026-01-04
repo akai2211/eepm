@@ -71,7 +71,7 @@ __epm_repo_pkgdel_alt()
         [ -d "$rd" ] && REPO_NAME="$(echo "$rd" | sed -e 's|.*\.||')" && break
     done
 
-    while [ -s "$1" ] ; do
+    while [ -n "$1" ] ; do
         for arch in $archlist ; do
             local rd="$REPO_DIR/$arch/RPMS.$REPO_NAME"
             [ -d $REPO_DIR/$arch/RPMS.$REPO_NAME ] || continue
