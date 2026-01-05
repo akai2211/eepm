@@ -100,9 +100,12 @@ tolower()
 
 has_space()
 {
-        # not for dash:
-        # [ "$1" != "${1/ //}" ]
-        [ "$(echo "$*" | sed -e "s| ||")" != "$*" ]
+        local res
+        set -f
+        set -- $@
+        [ $# -gt 1 ]; res=$?
+        set +f
+        return $res
 }
 
 list()
@@ -325,7 +328,7 @@ help()
         echo "  has <PATTERN> string              - check the string for a match to the regular expression given in PATTERN (grep notation)"
         echo "  match <PATTERN> string            - check the string for a match to the regular expression given in PATTERN (egrep notation)"
         echo "  isempty [string] (is_empty)       - true if string has no any symbols (only zero or more spaces)"
-        echo "  has_space [string]                - true if string has spaces"
+        echo "  has_space [string]                - true if string has whitespace (space, tab, newline)"
         echo "  union [word list]                 - sort and remove duplicates"
         echo "  intersection <list1> <list2>      - print only intersected items (the same in both lists)"
         echo "  difference <list1> <list2>        - symmetric difference between lists items (not in both lists)"
