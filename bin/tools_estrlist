@@ -282,13 +282,14 @@ reg_wordinclude()
 
 contains()
 {
-    local word
+    local word item found
     set -f
     for word in $1 ; do
-        case " $2 " in
-            *" $word "*) ;;
-            *) set +f ; return 1 ;;
-        esac
+        found=0
+        for item in $2 ; do
+            [ "$item" = "$word" ] && found=1 && break
+        done
+        [ "$found" = 0 ] && set +f && return 1
     done
     set +f
     return 0
