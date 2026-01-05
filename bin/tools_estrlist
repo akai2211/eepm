@@ -221,27 +221,19 @@ exclude()
 # regexclude_list "22 1." "11 12 21 22" -> "21"
 reg_exclude()
 {
-        local i
-        local RES="$2"
         set -f
-        for i in $1 ; do
-                RES="$(reg_remove "$i" "$RES")"
-        done
+        # Each pattern as separate line with ^...$ anchors (BRE, not ERE)
+        strip "$(list $2 | grep -vf <(list $1 | sed 's/.*/^&$/') | tr '\n' ' ')"
         set +f
-        strip "$RES"
 }
 
 # regexclude_list "22 1." "11 12 21 22" -> "21"
 reg_wordexclude()
 {
-        local i
-        local RES="$2"
         set -f
-        for i in $1 ; do
-                RES=$(reg_wordremove "$i" "$RES")
-        done
+        # Each pattern as separate line for grep -f (BRE, not ERE)
+        strip "$(list $2 | grep -vwf <(list $1) | tr '\n' ' ')"
         set +f
-        strip "$RES"
 }
 
 # internal function
@@ -270,18 +262,12 @@ difference()
 }
 
 
-# FIXME:
 # reg_include "1." "11 12 21 22" -> "11 12"
 reg_include()
 {
-        local i
-        local RES=""
         set -f
-        for i in $2 ; do
-                echo "$i" | grep -q -w "$1" && RES="$RES $i"
-        done
+        strip "$(list $2 | grep -w "$1" | tr '\n' ' ')"
         set +f
-        strip "$RES"
 }
 
 contains()
