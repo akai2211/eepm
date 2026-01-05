@@ -266,7 +266,17 @@ difference()
 reg_include()
 {
         set -f
-        strip "$(list $2 | grep -w "$1" | tr '\n' ' ')"
+        # Each pattern as separate line with ^...$ anchors (BRE, not ERE)
+        strip "$(list $2 | grep -f <(list $1 | sed 's/.*/^&$/') | tr '\n' ' ')"
+        set +f
+}
+
+# reg_wordinclude "1." "11 12 21 22" -> "11 12"
+reg_wordinclude()
+{
+        set -f
+        # Each pattern as separate line for grep -f (BRE, not ERE)
+        strip "$(list $2 | grep -wf <(list $1) | tr '\n' ' ')"
         set +f
 }
 
@@ -309,7 +319,8 @@ help()
         echo "  exclude <list1> <list2>           - print list2 items exclude list1 items"
         echo "  reg_exclude <list PATTERN> [word list] - print only words that do not match PATTERN"
         echo "  reg_wordexclude <list PATTERN> [word list] - print only words that do not match PATTERN (word boundary)"
-        echo "  reg_include <PATTERN> [word list] - print only words that match PATTERN (word boundary)"
+        echo "  reg_include <list PATTERN> [word list] - print only words that match PATTERN"
+        echo "  reg_wordinclude <list PATTERN> [word list] - print only words that match PATTERN (word boundary)"
         echo "  has <PATTERN> string              - check the string for a match to the regular expression given in PATTERN (grep notation)"
         echo "  match <PATTERN> string            - check the string for a match to the regular expression given in PATTERN (egrep notation)"
         echo "  isempty [string] (is_empty)       - true if string has no any symbols (only zero or more spaces)"
@@ -338,6 +349,8 @@ help()
         example reg_exclude "22 1." "11 12 21 22"
         example reg_wordexclude "wo.* er" "work were more else"
         example reg_include "1." "11 12 21 22"
+        example reg_wordinclude "lib" "lib libfoo foolib"
+        example reg_wordinclude "lib.*" "lib-foo libbar other"
         example union "1 2 2 3 3"
         example_res contains "wo" "wo wor"
         example_res contains "word" "wo wor"
