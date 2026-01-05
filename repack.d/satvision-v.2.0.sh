@@ -22,9 +22,10 @@ Categories=Network;
 EOF
 
 epm assure /usr/bin/convert
-a= convert .$PRODUCTDIR/main.ico .$PRODUCTDIR/main.png
+a= convert .$PRODUCTDIR/main.ico main.png
 
-install_file .$PRODUCTDIR/main.png /usr/share/pixmaps/$PRODUCT.png
+install_file main.png /usr/share/pixmaps/$PRODUCT.png
+rm main.png
 
 add_bin_link_command $PRODUCT "$PRODUCTDIR/Satvision V.2.0"
 
