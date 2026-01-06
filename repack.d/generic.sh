@@ -1,4 +1,7 @@
 #!/bin/sh -x
+
+# Generic repack script. Called before special script.
+
 # It will run with two args: buildroot spec
 BUILDROOT="$1"
 SPEC="$2"

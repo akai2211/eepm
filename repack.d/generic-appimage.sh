@@ -1,4 +1,7 @@
 #!/bin/sh -x
+
+# Generic repack script for any AppImage. Special script for target product will called after it.
+
 # It will run with two args: buildroot spec
 BUILDROOT="$1"
 SPEC="$2"
