@@ -158,6 +158,36 @@ has_wildcard()
     [ "${1/\*/}" != "$1" ]
 }
 
+# Patch binary file: replace old_string with new_string (padded with nulls)
+# Usage: patch_binary <file> <old_string> <new_string>
+patch_binary()
+{
+    local file="$1"
+    local old="$2"
+    local new="$3"
+
+    [ -f "$file" ] || return 1
+
+    local old_len=${#old}
+    local new_len=${#new}
+
+    if [ $new_len -gt $old_len ] ; then
+        fatal "patch_binary: new string ($new_len chars) is longer than old string ($old_len chars)"
+    fi
+
+    # Calculate padding (nulls needed)
+    local pad_len=$((old_len - new_len))
+    local padding=""
+    local i=0
+    while [ $i -lt $pad_len ] ; do
+        padding="${padding}\\x00"
+        i=$((i + 1))
+    done
+
+    # Use printf to generate sed script with proper null bytes, pipe to sed -f -
+    printf 's|%s|%s%s|g' "$old" "$new" "$padding" | sed -i -f - "$file"
+}
+
 # Add file to spec (if missed)
 # Usage: pack_file <path_to_file>
 pack_file()
