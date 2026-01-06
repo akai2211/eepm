@@ -1322,6 +1322,38 @@ subst()
 }
 fi
 
+# Suggest similar packages using fzf fuzzy search
+# Args: package_name
+__epm_suggest_similar_packages()
+{
+    local pkg="$1"
+    local cache="$epm_vardir/available-packages"
+
+    # need cache file
+    [ -s "$cache" ] || return 1
+
+    # need fzf for fuzzy search
+    is_command fzf || return 1
+
+    local similar
+    similar="$(fzf -f "$pkg" < "$cache" 2>/dev/null | head -3)"
+    [ -z "$similar" ] && return 1
+
+    echo ""
+    echo "Perhaps you meant:"
+    echo "$similar" | sed 's/^/  /'
+}
+
+# Suggest similar packages for a list of packages
+# Args: package_names...
+__epm_suggest_similar_packages_by_list()
+{
+    local pkg
+    for pkg in "$@" ; do
+        __epm_suggest_similar_packages "$pkg"
+    done
+}
+
 check_core_commands()
 {
     #which which >/dev/null || fatal "Can't find which command (which or debianutils package is missed?)"

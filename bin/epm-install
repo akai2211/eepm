@@ -169,8 +169,14 @@ epm_install_names()
                 __epm_alt_download_to_cache $VIRTAPTOPTIONS $APTOPTIONS $noremove install $@
             fi
 
-            sudocmd apt-get $VIRTAPTOPTIONS $APTOPTIONS $noremove install $@ && save_installed_packages $@
-            return ;;
+            sudocmd apt-get $VIRTAPTOPTIONS $APTOPTIONS $noremove install $@
+            local res=$?
+            if [ "$res" = 0 ] ; then
+                save_installed_packages $@
+            elif [ "$res" = 100 ] ; then
+                __epm_suggest_similar_packages_by_list $@
+            fi
+            return $res ;;
         apm-rpm)
             sudocmd apm system install $@
             local res=$?
@@ -296,10 +302,14 @@ epm_ni_install_names()
     case $PMTYPE in
         apt-rpm)
             sudocmd apt-get -y $noremove --force-yes -o APT::Install::VirtualVersion=true -o APT::Install::Virtual=true -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" $APTOPTIONS install $@
-            return ;;
+            local res=$?
+            [ "$res" = 100 ] && __epm_suggest_similar_packages_by_list $@
+            return $res ;;
         apt-dpkg)
             sudocmd env ACCEPT_EULA=y DEBIAN_FRONTEND=noninteractive apt-get -y $noremove --force-yes -o APT::Install::VirtualVersion=true -o APT::Install::Virtual=true -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" $APTOPTIONS install $@
-            return ;;
+            local res=$?
+            [ "$res" = 100 ] && __epm_suggest_similar_packages_by_list $@
+            return $res ;;
         apm-rpm)
             sudocmd apm system install $@
             return ;;
