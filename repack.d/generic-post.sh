@@ -13,8 +13,9 @@ PKG="$4"
 # add libs requires (after all ignore_lib_requires calls)
 add_libs_requires
 
-# remove temp file used by ignore_lib_requires
+# remove temp files
 rm -f "$BUILDROOT/.eepm_ignore_lib_requires"
+rm -f "$BUILDROOT/.eepm_stop_libs_requires"
 
 # print warning about forbidded paths
 # https://bugzilla.altlinux.org/show_bug.cgi?id=38842
