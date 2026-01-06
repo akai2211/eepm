@@ -16,10 +16,10 @@ add_libs_requires
 # remove temp file used by ignore_lib_requires
 rm -f "$BUILDROOT/.eepm_ignore_lib_requires"
 
-# drop forbidded paths
+# print warning about forbidded paths
 # https://bugzilla.altlinux.org/show_bug.cgi?id=38842
 for i in / /etc /etc/init.d /etc/systemd /bin /opt /usr /usr/bin /usr/lib /usr/lib64 /usr/share /usr/share/doc /var /var/log /var/run \
-        /etc/cron.daily /usr/share/icons/usr/share/pixmaps /usr/share/man /usr/share/man/man1 /usr/share/appdata /usr/share/applications /usr/share/menu \
+        /etc/cron.daily /usr/share/pixmaps /usr/share/man /usr/share/man/man1 /usr/share/appdata /usr/share/applications /usr/share/menu \
         /usr/share/mime /usr/share/mime/icons /usr/share/mime/packages /usr/share/icons \
         /usr/share/icons/gnome \
         /usr/share/icons/hicolor ; do
