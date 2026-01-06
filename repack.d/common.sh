@@ -176,9 +176,12 @@ pack_dir()
 {
     local file="$1"
     [ -n "$file" ] || return
-    # FIXME assisant
+    # Check if already listed as %dir (quoted or unquoted)
     grep -q "^%dir[[:space:]]$file/*$" $SPEC && return
     grep -q "^%dir[[:space:]]\"$file/*\"$" $SPEC && return
+    # Check if listed as file entry (will be converted to %dir later by generic.sh)
+    grep -q "^\"$file\"$" $SPEC && return
+    grep -q "^$file$" $SPEC && return
     has_space "$file" && file="\"$file\""
     subst "s|%files|%files\n%dir $file|" $SPEC
 }
