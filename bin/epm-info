@@ -240,7 +240,10 @@ epm_info()
         __handle_pkg_urls_to_checking
     fi
 
-    [ -n "$pkg_filenames" ] || fatal "Info: package name is missed"
+    if [ -z "$pkg_filenames" ] ; then
+        epm_info_help >&2
+        exit 1
+    fi
 
     __epm_info_by_pkgtype || __epm_info_by_pmtype
 
