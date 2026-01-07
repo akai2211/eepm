@@ -913,7 +913,7 @@ get_json_value()
         toutput="$(fetch_url "$1")" || return
         echo "$toutput" | parse_json_value "$2"
     else
-        [ -s "$1" ] || fatal "File $1 is missed, can't get json"
+        [ -s "$1" ] || fatal "File $1 is missing, can't get JSON"
         parse_json_value "$2" < "$1"
     fi
 }
@@ -933,7 +933,7 @@ get_json_values()
         toutput="$(fetch_url "$1")" || return
         echo "$toutput" | parse_json_values "$2"
     else
-        [ -s "$1" ] || fatal "File $1 is missed, can't get json"
+        [ -s "$1" ] || fatal "File $1 is missing, can't get JSON"
         parse_json_values "$2" < "$1"
     fi
 }
