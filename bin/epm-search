@@ -19,6 +19,7 @@
 
 load_helper epm-check_updated_repo
 load_helper epm-sh-warmup
+load_helper epm-sh-backend
 
 __epm_search_output()
 {
@@ -248,6 +249,12 @@ __epm_search_internal()
 epm_search()
 {
     [ -n "$1" ] || fatal "Search: search argument(s) is missed"
+
+    # check backend:package syntax
+    if echo "$*" | grep -q -E '(^| )[a-z][a-z][a-z]*:' && [ -z "$PPARGS" ] ; then
+        __process_backend_arguments __epm_search_internal "$@"
+        return
+    fi
 
     # it is useful for first time running
     update_repo_if_needed soft
