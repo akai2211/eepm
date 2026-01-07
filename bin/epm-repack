@@ -61,6 +61,9 @@ __epm_repack_copy()
     local abspkg="$1"
     local target="$2"
 
+    # skip if source and target are the same file
+    [ "$abspkg" -ef "$target" ] && return 0
+
     # if source file is not writable, try CoW or fallback to ordinal copy
     #if [ ! -w "$abspkg" ] ; then
     #    cp --reflink=auto $verbose $abspkg $target 2>/dev/null && return
