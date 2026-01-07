@@ -120,6 +120,31 @@ __get_fast_int_list_app()
     grep -l -E "^SUPPORTEDARCHES=(''|\"\"|.*\<$arch\>)" $psdir/*.sh | xargs grep -oP "^DESCRIPTION=[\"']*\K[^\"']+"  | sed -e "s|.*/\(.*\).sh:|\1$RIFS|" | grep -v -E "(^$IGNOREi586|^common|#.*$)"
 }
 
+# Suggest similar apps using fzf fuzzy search
+# Args: app_name
+__epm_play_suggest_similar_apps()
+{
+    local app="$1"
+    local arch="$SYSTEMARCH"
+
+    # need fzf for fuzzy search
+    is_command fzf || return 1
+
+    local list
+    list="$(__get_fast_short_list_app $arch)"
+    [ -z "$list" ] && return 1
+
+    [ -n "$verbose" ] && showcmd fzf -i -f "$app"
+    local similar
+    similar="$(echo "$list" | fzf -i -f "$app" 2>/dev/null | head -5)"
+    [ -z "$similar" ] && return 1
+
+    echo ""
+    echo "Perhaps you meant:"
+    echo "$similar" | sed 's/^/  /'
+}
+
+
 __epm_play_list()
 {
     local psdir="$1"

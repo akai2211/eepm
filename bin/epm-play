@@ -323,7 +323,13 @@ __epm_play_install_one()
     else
         local opsdir=$psdir
         psdir=$prsdir
-        has_play_script "$prescription" || fatal "We have no idea how to play $prescription (checked in $opsdir and $prsdir)"
+        if ! has_play_script "$prescription" ; then
+            psdir=$opsdir
+            echo "Unknown app '$prescription'." >&2
+            [ -n "$verbose" ] && echo "Checked in $opsdir and $prsdir" >&2
+            __epm_play_suggest_similar_apps "$prescription"
+            return 1
+        fi
         __epm_play_run "$prescription" --run "$@" || fatal "There was some error during run $prescription script."
     fi
 }
