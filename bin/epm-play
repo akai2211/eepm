@@ -257,6 +257,7 @@ Options:
     --print-url <app>     - print download URL for the app (do not install)
     --list                - list all installed apps
     --list-all            - list all available apps
+    --search <pattern>    - search available apps by name or description
     --list-scripts        - list all available scripts
     --short (with --list) - list names only
     --installed <app>     - check if the app is installed
@@ -621,6 +622,13 @@ case "$1" in
         echo
         #echo "Run epm play --help for help"
         epm_play_help
+        exit
+        ;;
+
+    --search)
+        shift
+        [ -n "$1" ] || fatal "Search pattern is required"
+        __epm_play_search "$1"
         exit
         ;;
 

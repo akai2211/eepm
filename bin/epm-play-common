@@ -192,3 +192,15 @@ __epm_play_list()
         fi
     done
 }
+
+
+__epm_play_search()
+{
+    local pattern="$1"
+    local arch="$SYSTEMARCH"
+    local RIFS=$'\x1E'
+
+    __get_fast_int_list_app $arch | grep -i "$pattern" | while IFS=$'\x1E' read -r app desc; do
+        printf "  %-25s - %s\n" "$app" "$desc"
+    done
+}
