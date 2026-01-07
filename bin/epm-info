@@ -34,6 +34,8 @@ Options:
   --recommends      print recommended packages
   --suggests        print suggested packages
   --changelog       print package changelog
+  --whatdepends     print packages that depend on this
+  --whatprovides    print packages that provide the target
 
 Without options prints general package information.
 '
@@ -230,6 +232,16 @@ epm_info()
         --changelog)
             load_helper epm-changelog
             epm_changelog
+            return
+            ;;
+        --whatdepends)
+            load_helper epm-whatdepends
+            epm_whatdepends
+            return
+            ;;
+        --whatprovides)
+            load_helper epm-whatprovides
+            epm_whatprovides
             return
             ;;
     esac
