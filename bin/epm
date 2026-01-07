@@ -193,6 +193,11 @@ case $PROGNAME in
         epm_cmd=play
         direct_args=1
         ;;
+    epmps)                     # HELPSHORT: alias for epm play --search
+        epm_cmd=play
+        quoted_args="--search"
+        direct_args=1
+        ;;
     epms)                      # HELPSHORT: alias for epm search
         epm_cmd=search
         direct_args=1
