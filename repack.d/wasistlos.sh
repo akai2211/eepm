@@ -34,3 +34,6 @@ if [ -f "$WEBKIT_LIB" ] ; then
     # /usr/lib/x86_64-linux-gnu/webkit2gtk-4.1 (40 chars) -> /opt/wasistlos/webkit2gtk-4.1 (30 chars)
     patch_binary "$WEBKIT_LIB" "/usr/lib/x86_64-linux-gnu/webkit2gtk-4.1" "/opt/wasistlos/webkit2gtk-4.1"
 fi
+
+# Set GIO_MODULE_DIR for TLS support (GnuTLS module for HTTPS)
+echo 'GIO_MODULE_DIR=$APPDIR/usr/lib/x86_64-linux-gnu/gio/modules' >> "$BUILDROOT$PRODUCTDIR/.env"
