@@ -1,0 +1,97 @@
+#!/bin/sh
+#
+# Copyright (C) 2026  Etersoft
+# Copyright (C) 2026  Vitaly Lipatov <lav@etersoft.ru>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+
+load_helper epm-query
+load_helper epm-print
+
+epm_info_recommends_files()
+{
+    [ -n "$pkg_files" ] || return
+
+    local pkg
+    for pkg in $pkg_files ; do
+        case $(get_package_type $pkg) in
+            rpm)
+                docmd rpm -q --recommends -p $pkg
+                ;;
+            deb)
+                a='' docmd dpkg -I $pkg | grep "^ *Recommends:" | sed "s|^ *Recommends:||g"
+                ;;
+            *)
+                warning "Recommends: unsupported package type for $pkg"
+                ;;
+        esac
+    done
+}
+
+epm_info_recommends_names()
+{
+    [ -n "$pkg_names" ] || return
+
+    case $PMTYPE in
+        apt-rpm)
+            if is_installed $pkg_names ; then
+                docmd rpm -q --recommends $pkg_names
+            else
+                EXTRA_SHOWDOCMD=' | grep "Recommends:"'
+                docmd apt-cache show $pkg_names | grep "^Recommends:" | sed "s|^Recommends:||g"
+            fi
+            ;;
+        apt-dpkg|aptitude-dpkg)
+            if is_installed $pkg_names ; then
+                showcmd dpkg -s $pkg_names
+                a='' dpkg -s $pkg_names | grep "^Recommends:" | sed "s|^Recommends:||g"
+            else
+                EXTRA_SHOWDOCMD=' | grep "Recommends:"'
+                docmd apt-cache show $pkg_names | grep "^Recommends:" | sed "s|^Recommends:||g"
+            fi
+            ;;
+        dnf-rpm|dnf5-rpm)
+            if is_installed $pkg_names ; then
+                docmd rpm -q --recommends $pkg_names
+            else
+                docmd dnf repoquery --recommends $pkg_names
+            fi
+            ;;
+        yum-rpm)
+            docmd rpm -q --recommends $pkg_names
+            ;;
+        urpm-rpm|zypper-rpm)
+            docmd rpm -q --recommends $pkg_names
+            ;;
+        pacman)
+            if is_installed $pkg_names ; then
+                docmd pacman -Qi $pkg_names | grep "^Optional Deps"
+            else
+                docmd pacman -Si $pkg_names | grep "^Optional Deps"
+            fi
+            ;;
+        *)
+            fatal 'Have no suitable command for $PMTYPE in epm_info_recommends()'
+            ;;
+    esac
+}
+
+epm_info_recommends()
+{
+    [ -n "$pkg_filenames" ] || fatal "Recommends: package name is missed"
+
+    epm_info_recommends_files
+    epm_info_recommends_names
+}

@@ -301,7 +301,7 @@ check_command()
     -cl|cl|changelog)         # HELPCMD: show changelog for package
         epm_cmd=changelog
         ;;
-    -qi|qi|info|show)         # HELPCMD: print package detail info
+    -qi|qi|info|show)         # HELPCMD: print package detail info (see epm info --help)
         epm_cmd=info
         ;;
     requires|deplist|depends|req|depends-on)     # HELPCMD: print package requires

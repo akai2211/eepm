@@ -19,6 +19,26 @@
 
 load_helper epm-query
 
+epm_info_help()
+{
+    message '
+epm info - print package information
+Usage: epm info [options] <package>
+
+Options:
+  -h, --help        show this help
+  --requires        print package requires (dependencies)
+  --provides        print package provides
+  --conflicts       print package conflicts
+  --obsoletes       print packages obsoleted by this package
+  --recommends      print recommended packages
+  --suggests        print suggested packages
+  --changelog       print package changelog
+
+Without options prints general package information.
+'
+}
+
 __epm_info_rpm_low()
 {
     if [ -n "$pkg_files" ] ; then
@@ -172,18 +192,57 @@ esac
 # implement _files part per package, not by PMTYPE (see filelist)
 epm_info()
 {
+    case "$pkg_options" in
+        -h|--help)
+            epm_info_help
+            return
+            ;;
+        --requires)
+            load_helper epm-requires
+            epm_requires
+            return
+            ;;
+        --provides)
+            load_helper epm-provides
+            epm_provides
+            return
+            ;;
+        --conflicts)
+            load_helper epm-conflicts
+            epm_conflicts
+            return
+            ;;
+        --obsoletes)
+            load_helper epm-info_obsoletes
+            epm_info_obsoletes
+            return
+            ;;
+        --recommends)
+            load_helper epm-info_recommends
+            epm_info_recommends
+            return
+            ;;
+        --suggests)
+            load_helper epm-info_suggests
+            epm_info_suggests
+            return
+            ;;
+        --changelog)
+            load_helper epm-changelog
+            epm_changelog
+            return
+            ;;
+    esac
 
-# if possible, it will put pkg_urls into pkg_files or pkg_names
-if [ -n "$pkg_urls" ] ; then
-    load_helper epm-download
-    __handle_pkg_urls_to_checking
-fi
+    # if possible, it will put pkg_urls into pkg_files or pkg_names
+    if [ -n "$pkg_urls" ] ; then
+        load_helper epm-download
+        __handle_pkg_urls_to_checking
+    fi
 
-[ -n "$pkg_filenames" ] || fatal "Info: package name is missed"
+    [ -n "$pkg_filenames" ] || fatal "Info: package name is missed"
 
-__epm_info_by_pkgtype || __epm_info_by_pmtype
+    __epm_info_by_pkgtype || __epm_info_by_pmtype
 
-local RETVAL=$?
-
-return $RETVAL
+    return $?
 }
