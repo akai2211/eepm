@@ -229,8 +229,8 @@ __convert_glob__to_regexp()
 get_github_release_info() {
     local url="$1"
     local user_and_repo=${url#https://github.com/}
-
-    fetch_url "https://api.github.com/repos/${user_and_repo%/}/releases"
+    
+    eget -O- "https://api.github.com/repos/${user_and_repo%/}/releases"
 }
 
 get_github_url()
