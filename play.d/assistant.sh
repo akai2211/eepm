@@ -20,7 +20,7 @@ DLURL="https://xn--80akicokc0aablc.xn--p1ai/%D1%81%D0%BA%D0%B0%D1%87%D0%B0%D1%82
 
 # parse vendor site
 tmpfile=$(mktemp)
-trap "rm -f $tmpfile" EXIT
+trap 'rm -f "$tmpfile"' EXIT
 eget -q -O- "$DLURL" | grep -A200 "Ассистент для LINUX" >$tmpfile
 
 url_by_text()

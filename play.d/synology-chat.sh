@@ -13,10 +13,7 @@ URL="https://synology.com"
 urldir="$(eget --list https://archive.synology.com/download/Utility/ChatClient "/$VERSION-*" | head -n1)"
 [ -n "$urldir" ] || fatal "Can't get dir for $VERSION version on https://archive.synology.com/download/Utility/ChatClient"
 
-# use temp dir
-PKGDIR="$(mktemp -d)"
-trap "rm -fr $PKGDIR" EXIT
-cd $PKGDIR || fatal
+cd_to_temp_dir
 
 PKGURL="$PKGNAME.deb"
 # fix spaces in the package name

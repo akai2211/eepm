@@ -28,10 +28,7 @@ esac
 set_version()
 {
     local URL="$1"
-    # use temp dir
-    PKGDIR="$(mktemp -d)"
-    trap "rm -frv $PKGDIR" EXIT
-    cd $PKGDIR || fatal
+    cd_to_temp_dir
     eget -O pkg.deb "$URL"
     VERSION="$(epm print version of package pkg.deb)"
 }

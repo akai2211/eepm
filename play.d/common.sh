@@ -24,8 +24,8 @@ info()
 cd_to_temp_dir()
 {
     PKGDIR=$(mktemp -d --tmpdir=$BIGTMPDIR)
-    trap "rm -fr $PKGDIR" EXIT
-    cd $PKGDIR || fatal
+    trap 'rm -fr "$PKGDIR"' EXIT
+    cd "$PKGDIR" || fatal
 }
 
 # print a path to the command if exists in $PATH

@@ -28,10 +28,7 @@ case "$pkgtype" in
         ;;
 esac
 
-# use temp dir
-PKGDIR="$(mktemp -d)"
-trap "rm -fr $PKGDIR" EXIT
-cd $PKGDIR || fatal
+cd_to_temp_dir
 
 
 if ! eget --check-site $PKGURL ; then
