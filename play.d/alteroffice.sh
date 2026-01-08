@@ -24,4 +24,4 @@ case $(epm print info -s) in
         fatal $1 is not supported ;;
 esac
 
-epm install "http://repo.alter-os.ru/testing/AlterOffice/v$BASEVER/linux/x64/$distr" --scripts
+epm install "https://repo.alter-os.ru/testing/AlterOffice/v$BASEVER/linux/x64/$distr" --scripts
