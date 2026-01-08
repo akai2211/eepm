@@ -99,9 +99,14 @@ extract_archive()
 	fi
 
 	if [ "$type" = "AppImage" ] || [ "$type" = "appimage" ] ; then
-		docmd chmod u+x "$rarc" || fatal "Can't set executable permission"
-		docmd "$rarc" --appimage-extract
-		mv squashfs-root "$(basename "$(basename "$arc" .AppImage)" .appimage)"
+		local subdir="$(basename "$(basename "$arc" .AppImage)" .appimage)"
+		# Security: extract without executing the file
+		if is_command unsquashfs ; then
+			docmd unsquashfs -d "$subdir" "$rarc"
+		else
+			mkdir -p "$subdir" && cd "$subdir" || fatal
+			docmd $HAVE_7Z x "$rarc"
+		fi
 		exit
 	fi
 

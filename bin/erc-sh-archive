@@ -108,7 +108,8 @@ is_target_format()
 {
 	[ "${1/:/}" = "$1" ] && return 1
 	local arc="$(echo "$1" | sed -e 's|:.*||g')"
-	list_formats | grep -q "^$arc$" && return 0
+	# Security: use -Fx for exact string match, not regex
+	list_formats | grep -qFx "$arc" && return 0
 	return 1
 }
 
