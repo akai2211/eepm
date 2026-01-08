@@ -709,12 +709,19 @@ esu()
     fi
 }
 
+# Escape regex special characters (except * and ? which are glob patterns)
+__escape_regex_special()
+{
+    # escape: \ . ^ $ | ( ) [ ] { } +
+    echo "$1" | sed -e 's|[\\.^$|(){}+]|\\&|g' -e 's|\[|\\[|g' -e 's|\]|\\]|g'
+}
+
 # copied from eget's filter_glob
 # check man glob
 __convert_glob__to_regexp()
 {
-    # translate glob to regexp
-    echo "$1" | sed -e "s|\*|.*|g" -e "s|?|.|g"
+    # first escape regex special chars, then translate glob to regexp
+    __escape_regex_special "$1" | sed -e "s|\*|.*|g" -e "s|?|.|g"
 }
 
 regexp_subst()
