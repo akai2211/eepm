@@ -235,7 +235,7 @@ install_file()
         dest="$(basename "$src")"
     else
         mkdir -p "$BUILDROOT/$(dirname "$dest")" || return
-        [ -L "$BUILDROOT$dest" ] && rm -v "$BUILDROOT$dest"
+        rm -f "$BUILDROOT$dest" 2>/dev/null
     fi
 
     if is_url "$src" ; then
@@ -282,8 +282,6 @@ __check_target_bin()
         # if target is a relative, skiping when /usr/bin/$name exists
         [ -e "$BUILDROOT/usr/bin/$name" ] && echo "Skipping /usr/bin/$name with relative target $target ..." && return 1
     fi
-    # allow override existed links
-    [ -L "$BUILDROOT/usr/bin/$name" ] && rm -f "$BUILDROOT/usr/bin/$name"
     return 0
 }
 
@@ -296,8 +294,8 @@ add_bin_link_command()
     [ "$name" = "$target" ] && return
 
     __check_target_bin "$name" "$target" || return 0
-    mkdir -p $BUILDROOT/usr/bin/
-    ln -sf "$target" "$BUILDROOT/usr/bin/$name" || return
+    mkdir -p "$BUILDROOT/usr/bin/"
+    ln -snf "$target" "$BUILDROOT/usr/bin/$name" || return
     pack_file "/usr/bin/$name"
 }
 
@@ -684,8 +682,7 @@ fix_cpio_bug_links()
         rlink="$(readlink "$link")"
         echo "$rlink" | grep -E "^(etc|var|opt|usr)/" || continue
         echo "Fixing cpio ALT bug 42189 in $link <- $rlink" >&2
-        rm -v $link
-        ln -sv /$rlink $link
+        ln -snfv "/$rlink" "$link"
     done
 }
 
@@ -696,9 +693,8 @@ use_system_xdg()
     [ -n "$prod" ] || prod="$PRODUCTDIR"
     # replace embedded xdg tools
     for i in $prod/{xdg-mime,xdg-settings} ; do
-        [ -s $BUILDROOT$i ] || continue
-        rm -v $BUILDROOT$i
-        ln -s /usr/bin/$(basename $i) $BUILDROOT$i
+        [ -s "$BUILDROOT$i" ] || continue
+        ln -snfv "/usr/bin/$(basename "$i")" "$BUILDROOT$i"
     done
 }
 
