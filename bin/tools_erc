@@ -73,6 +73,19 @@ create_archive()
 	esac
 }
 
+# Extract squashfs-based archives (AppImage, squashfs, snap)
+extract_squashfs_image()
+{
+	local arc="$1"
+	local subdir="$2"
+	if is_command unsquashfs ; then
+		docmd unsquashfs -d "$subdir" "$arc"
+	else
+		mkdir -p "$subdir" && cd "$subdir" || fatal
+		docmd $HAVE_7Z x "$arc"
+	fi
+}
+
 extract_archive()
 {
 	local arc="$1"
@@ -99,21 +112,17 @@ extract_archive()
 	fi
 
 	if [ "$type" = "AppImage" ] || [ "$type" = "appimage" ] ; then
-		local subdir="$(basename "$(basename "$arc" .AppImage)" .appimage)"
-		# Security: extract without executing the file
-		if is_command unsquashfs ; then
-			docmd unsquashfs -d "$subdir" "$rarc"
-		else
-			mkdir -p "$subdir" && cd "$subdir" || fatal
-			docmd $HAVE_7Z x "$rarc"
-		fi
+		extract_squashfs_image "$rarc" "$(basename "$(basename "$arc" .AppImage)" .appimage)"
 		exit
 	fi
 
 	if [ "$type" = "squashfs" ] ; then
-		local subdir="$(basename "$arc" .squashfs)"
-		mkdir -p "$subdir" && cd "$subdir" || fatal
-		docmd $HAVE_7Z x "$rarc"
+		extract_squashfs_image "$rarc" "$(basename "$arc" .squashfs)"
+		exit
+	fi
+
+	if [ "$type" = "snap" ] ; then
+		extract_squashfs_image "$rarc" "$(basename "$arc" .snap)"
 		exit
 	fi
 

@@ -82,6 +82,7 @@ dll
 AppImage
 appimage
 squashfs
+snap
 EOF
 }
 
