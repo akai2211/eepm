@@ -12,6 +12,11 @@ SUBGENERIC="$5"
 # firstly, pack $PRODUCTDIR if used
 . $(dirname $0)/common.sh
 
+# Security: reject packages containing .eepm.yaml (could be used for command injection)
+if find "$BUILDROOT" -name "*.eepm.yaml" 2>/dev/null | grep -q . ; then
+    fatal "Package contains .eepm.yaml file which is not allowed (security risk)"
+fi
+
 # commented out: conflicts with already installed package
 # drop %dir for existed system dirs
 #for i in $(grep '^%dir "' $spec | sed -e 's|^%dir  *"\(.*\)".*|\1|' ) ; do #"
@@ -157,9 +162,8 @@ subst "s|^\(Version: .*\)~.*|\1|" $SPEC
 subst "s|^Release: |Release: epm1.repacked.|" $SPEC
 set_rpm_field "Distribution" "EEPM"
 
-# TODO: check the yaml file!!!
 if [ -r "$PKG.eepm.yaml" ] ; then
-    eval $(epm tool yaml $PKG.eepm.yaml | grep -E '^(summary|description|upstream_file|upstream_url|url|appname|arch|group|license|version)=' ) #'
+    yaml_load_vars "$PKG.eepm.yaml" name summary description upstream_file upstream_url url appname arch group license version
     # for tarballs fix permissions
     chmod $verbose -R a+rX *
     [ -n "$name" ] && [ "$name" != "$PRODUCT" ] && warning "name $name in $PKG.eepm.yaml is not equal to PRODUCT $PRODUCT"
