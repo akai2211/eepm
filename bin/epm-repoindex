@@ -133,6 +133,27 @@ __epm_repoindex_deb()
 epm_repoindex()
 {
 
+if [ "$1" = "-h" ] || [ "$1" = "--help" ] ; then
+    message 'epm repo index - create/update repository index
+Usage: epm repo index [options] [path] [name]
+
+Options (ALT Linux):
+  --init          create repository structure
+  --sign          sign repository
+  --default-key=KEY  GPG key for signing
+
+If path is omitted, current directory is used.
+If name is omitted, "addon" is used (or detected from existing RPMS.* dir).
+
+Examples:
+  epm repo index                    update index in current dir
+  epm repo index /srv/repo          update index in /srv/repo
+  epm repo index --init /srv/repo myrepo  create new repo structure
+  epm repo index --sign /srv/repo   update and sign index
+'
+    return
+fi
+
 case $PMTYPE in
     apt-rpm|apm-rpm)
         __epm_repoindex_alt "$@"
