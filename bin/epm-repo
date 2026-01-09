@@ -64,7 +64,8 @@ epm_repo()
     set)                              # HELPCMD: <repo>: remove all existing sources and add default mirror for the branch
         if_valid_reponame "$1" || fatal "No valid repository is specified."
         [ -n "$quiet" ] || epm repo list
-        confirm_info 'You are about to set repo ' "$*" "(all repos will be removed)."
+        local repo="$*"
+        confirm_info 'You are about to set repo $repo (all repos will be removed).'
         load_helper epm-reposave
         load_helper epm-repomirrors
         # Remember current mirror before removing repos

@@ -316,7 +316,7 @@ __switch_alt_to_distro()
 
     case "$*" in
         "p6"|"p6 p7"|"t6 p7"|"c6 c7")
-            confirm_info "Upgrade $DISTRNAME from $FROM to $TO ..."
+            confirm_info 'Upgrade $DISTRNAME from $FROM to $TO ...'
             docmd epm install rpm apt $(get_fix_release_pkg "$FROM") || fatal
             __switch_repo_to $TO
             docmd epm install rpm apt $(get_fix_release_pkg --force "$TO") || fatal "Check the errors and run '# epm release-upgrade' again"
@@ -326,7 +326,7 @@ __switch_alt_to_distro()
             info "Run epm release-upgrade again for update to p8"
             ;;
         "p7"|"p7 p8"|"t7 p8"|"c7 c8")
-            confirm_info "Upgrade $DISTRNAME from $FROM to $TO ..."
+            confirm_info 'Upgrade $DISTRNAME from $FROM to $TO ...'
             docmd epm install rpm apt $(get_fix_release_pkg "$FROM") || fatal
             __switch_repo_to $TO
             docmd epm install rpm apt $(get_fix_release_pkg --force "$TO") || fatal "Check the errors and run '# epm release-upgrade' again"
@@ -337,7 +337,7 @@ __switch_alt_to_distro()
             info "Run epm release-upgrade again for update to p9"
             ;;
         "c8"|"c8.1"|"c8.2"|"c8 c8.1"|"c8.1 c8.2"|"c8 c8.2")
-            confirm_info "Upgrade $DISTRNAME from $FROM to $TO ..."
+            confirm_info 'Upgrade $DISTRNAME from $FROM to $TO ...'
             docmd epm install rpm apt $(get_fix_release_pkg "$FROM") || fatal
             __switch_repo_to $TO
             docmd epm install rpm apt $(get_fix_release_pkg --force "$TO") || fatal "Check the errors and run '# epm release-upgrade' again"
@@ -347,7 +347,7 @@ __switch_alt_to_distro()
             docmd epm update-kernel || fatal
             ;;
         "p8 c8"|"p8 c8.1"|"p8 c8.2")
-            confirm_info "Upgrade $DISTRNAME from $FROM to $TO ..."
+            confirm_info 'Upgrade $DISTRNAME from $FROM to $TO ...'
             docmd epm install rpm apt $(get_fix_release_pkg "$FROM") || fatal
             __switch_repo_to $TO
             docmd epm install rpm apt $(get_fix_release_pkg --force "$TO") || fatal "Check the errors and run '# epm release-upgrade' again"
@@ -362,7 +362,7 @@ __switch_alt_to_distro()
             docmd epm update-kernel || fatal
             ;;
         "p8"|"p8 p9"|"t8 p9"|"c8 c9"|"c8 p9"|"c8.1 p9"|"c8.2 p9"|"p9 p9"|"p9 c9f2")
-            confirm_info "Upgrade $DISTRNAME from $FROM to $TO ..."
+            confirm_info 'Upgrade $DISTRNAME from $FROM to $TO ...'
             docmd epm install rpm apt $(get_fix_release_pkg "$FROM") || fatal
             info "Workaround for https://bugzilla.altlinux.org/show_bug.cgi?id=35492 ..."
             if epm installed gdb >/dev/null ; then
@@ -379,7 +379,7 @@ __switch_alt_to_distro()
         "p9"|"p9 p10"|"p10 p10")
             info "Upgrade all packages to current $FROM repository"
             __do_upgrade
-            confirm_info "Upgrade $DISTRNAME from $FROM to $TO ..."
+            confirm_info 'Upgrade $DISTRNAME from $FROM to $TO ...'
             docmd epm install rpm apt $(get_fix_release_pkg "$FROM") || fatal
             if [ $TO = "p11" ]; then __p11_upgrade_fix; fi
             __switch_repo_to $TO
@@ -392,7 +392,7 @@ __switch_alt_to_distro()
         "p10 p11")
             info "Upgrade all packages to current $FROM repository"
             __do_upgrade
-            confirm_info "Upgrade $DISTRNAME from $FROM to $TO ..."
+            confirm_info 'Upgrade $DISTRNAME from $FROM to $TO ...'
             docmd epm install rpm apt $(get_fix_release_pkg "$FROM") || fatal
             __p11_upgrade_fix
             __switch_repo_to $TO
@@ -406,7 +406,7 @@ __switch_alt_to_distro()
         "c10f1 c10f2"|"c10f2 c10f3")
             info "Upgrade all packages to current $FROM repository"
             __do_upgrade
-            confirm_info "Upgrade $DISTRNAME from $FROM to $TO ..."
+            confirm_info 'Upgrade $DISTRNAME from $FROM to $TO ...'
             docmd epm install rpm apt $(get_fix_release_pkg "$FROM") || fatal
             #__p11_upgrade_fix
             __switch_repo_to $TO
@@ -419,7 +419,7 @@ __switch_alt_to_distro()
             docmd epm update-kernel || fatal
             ;;
         "p9 p8"|"c8.1 c8"|"c8.1 p8"|"p8 p8")
-            confirm_info "Downgrade $DISTRNAME from $FROM to $TO ..."
+            confirm_info 'Downgrade $DISTRNAME from $FROM to $TO ...'
             docmd epm install $(get_fix_release_pkg "$FROM")
             __switch_repo_to $TO
             docmd epm downgrade rpm apt $(get_fix_release_pkg --force "$TO") || fatal "Check the errors and run '# epm release-upgrade' again"
@@ -433,7 +433,7 @@ __switch_alt_to_distro()
             docmd epm upgrade || fatal
             ;;
         "p9 c8"|"p9 c8.1"|"p9 c8.2")
-            confirm_info "Downgrade $DISTRNAME from $FROM to $TO ..."
+            confirm_info 'Downgrade $DISTRNAME from $FROM to $TO ...'
             docmd epm install $(get_fix_release_pkg "$FROM")
             __switch_repo_to $TO
             docmd epm downgrade rpm apt $(get_fix_release_pkg --force "$TO") || fatal "Check the errors and run '# epm release-upgrade' again"
@@ -447,7 +447,7 @@ __switch_alt_to_distro()
             docmd epm upgrade || fatal
             ;;
         "p10 p9"|"p11 p9")
-            confirm_info "Downgrade $DISTRNAME from $FROM to $TO ..."
+            confirm_info 'Downgrade $DISTRNAME from $FROM to $TO ...'
             docmd epm install $(get_fix_release_pkg "$FROM")
             __switch_repo_to $TO
             docmd epm downgrade rpm apt $(get_fix_release_pkg --force "$TO") || fatal "Check the errors and run '# epm release-upgrade' again"
@@ -457,7 +457,7 @@ __switch_alt_to_distro()
             docmd epm upgrade || fatal
             ;;
         "Sisyphus p8"|"Sisyphus p9"|"Sisyphus p10"|"Sisyphus p11"|"Sisyphus c8"|"Sisyphus c8.1"|"Sisyphus c9f2"|"Sisyphus c10f1"|"Sisyphus c10f2"|"Sisyphus c10f3")
-            confirm_info "Downgrade $DISTRNAME from $FROM to $TO ..."
+            confirm_info 'Downgrade $DISTRNAME from $FROM to $TO ...'
             docmd epm install $(get_fix_release_pkg "$FROM")
             if [ $TO = "p11" ]; then __sisyphus_downgrade_fix; fi
             __switch_repo_to $TO
@@ -468,7 +468,7 @@ __switch_alt_to_distro()
             docmd epm upgrade || fatal
             ;;
         "p8 Sisyphus"|"p9 Sisyphus"|"p10 Sisyphus"|"p11 Sisyphus"|"Sisyphus Sisyphus")
-            confirm_info "Upgrade $DISTRNAME from $FROM to $TO ..."
+            confirm_info 'Upgrade $DISTRNAME from $FROM to $TO ...'
             docmd epm install rpm apt $(get_fix_release_pkg "$FROM") || fatal
             docmd epm upgrade || fatal
             # TODO: epm_reposwitch??

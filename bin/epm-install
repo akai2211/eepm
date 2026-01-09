@@ -556,7 +556,7 @@ epm_install()
         if tasknumberprefix $pkg_names; then
             load_helper epm-install-alt
             if [ -n "$interactive" ] ; then
-                confirm_info "You are about to install $pkg_names task(s) from https://git.altlinux.org."
+                confirm_info 'You are about to install $pkg_names task(s) from https://git.altlinux.org.'
             fi
             epm_install_alt_tasks $pkg_names
             return
@@ -566,9 +566,10 @@ epm_install()
            echo "$pkg_urls" | grep -q -E "https://git.altlinux.org/tasks/archive/done/_[0-9]+/[0-9]+/*$" ; then
             load_helper epm-install-alt
             local task="$(basename "$pkg_urls")"
+            local taskurl="$(dirname "$pkg_urls")"
             pkg_urls=""
             if [ -n "$interactive" ] ; then
-                confirm_info "You are about to install $task task from $(dirname "$pkg_urls")."
+                confirm_info 'You are about to install task $task from $taskurl.'
             fi
             epm_install_alt_tasks "$task"
             return
@@ -588,7 +589,8 @@ epm_install()
     fi
 
     if [ -n "$interactive" ] && [ -n "$pkg_names$pkg_files$pkg_urls" ] ; then
-        confirm_info "You are about to install $(echo $pkg_names $pkg_files $pkg_urls) package(s)."
+        local pkgs="$pkg_names $pkg_files $pkg_urls"
+        confirm_info 'You are about to install $pkgs package(s).'
         # TODO: for some packages with dependencies apt will ask later again
     fi
 
