@@ -504,7 +504,7 @@ check_command()
         direct_args=1
         ;;
 
-    -V|checkpkg|integrity)    # HELPCMD: check package file integrity (checksum)
+    checkpkg|integrity)       # HELPCMD: check package file integrity (checksum)
         epm_cmd=checkpkg
         ;;
     -h|--help|help)           # HELPOPT: print this help
