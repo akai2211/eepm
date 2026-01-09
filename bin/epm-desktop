@@ -236,6 +236,16 @@ list_des()
     echo ']'
 }
 
+
+list_installed_des()
+{
+    local de de_name
+    for de in $CONFIGDIR/desktop.d/*.json ; do
+        de_name="$(basename "$de" .json)" || fatal
+        is_de_installed "$de_name" && echo "$de_name"
+    done
+}
+
 epm_desktop_help()
 {
     message 'Usage: epm desktop <command> [--json] [option]'
@@ -279,8 +289,11 @@ epm_desktop()
             check_if_de_exists "$1"
             get_de_info "$1" $json_flag
             ;;
-        list)                         # HELPCMD:             List all available desktop environments'
+        list)                         # HELPCMD:             List all available desktop environments
             list_des $json_flag
+            ;;
+        list-installed)               # HELPCMD:             List installed desktop environments
+            list_installed_des
             ;;
         installed)
             is_de_installed "$1"
