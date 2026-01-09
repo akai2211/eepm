@@ -51,8 +51,9 @@ __epm_grep_repo_list()
         epm --quiet repo list
         return
     fi
+    # use --regex for raw regex patterns
     while [ -n "$1" ] ; do
-        epm --quiet repo list "$1"
+        epm --quiet repo list --regex "$1"
         shift
     done
 }
@@ -64,8 +65,9 @@ __epm_removerepo_alt_grepremove()
 
     rl="$(__epm_grep_repo_list "$@" 2>/dev/null)"
     if [ -z "$rl" ] ; then
-        [ -n "$verbose" ] && warning 'Can'\''t find '$*' in the repos list (see # epm repolist output)'
-        return 1
+        # not an error - repo may be already removed (idempotency)
+        [ -n "$verbose" ] && info 'Repo '$*' is not in the repos list'
+        return 0
     fi
 
     echo "$rl" | while read rp ; do
