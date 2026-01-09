@@ -34,6 +34,42 @@ tasknumber()
     isnumber "$num" && echo "$*"
 }
 
+# Extract task number from various formats: 123456, 123456/pkg, task/123456, task/123456/pkg
+get_tasknumber_from_arg()
+{
+    local arg="$1"
+    local task=""
+    case "$arg" in
+        task/*/*)
+            task=$(printf "%s" "$arg" | cut -d/ -f2)
+            ;;
+        task/*)
+            task=$(printf "%s" "$arg" | cut -d/ -f2)
+            ;;
+        */*)
+            task=$(printf "%s" "$arg" | cut -d/ -f1)
+            ;;
+        *)
+            task="$arg"
+            ;;
+    esac
+    isnumber "$task" && echo "$task"
+}
+
+# Extract package name from task arg formats: 123456/pkg, task/123456/pkg
+get_pkgname_from_taskarg()
+{
+    local arg="$1"
+    case "$arg" in
+        task/*/*)
+            printf "%s" "$arg" | cut -d/ -f3
+            ;;
+        */*)
+            printf "%s" "$arg" | cut -d/ -f2
+            ;;
+    esac
+}
+
 ALTTASKURL="http://git.altlinux.org/tasks"
 
 get_task_status()
