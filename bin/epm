@@ -172,7 +172,7 @@ eget_ipfs_db=$epm_vardir/eget-ipfs-db.txt
 
 # load system wide config
 for i in $CONFIGDIR/eepm.conf $CONFIGDIR/conf.d/*.conf ; do
-    [ -f $CONFIGDIR/$i ] && . $CONFIGDIR/$i
+    [ -f "$i" ] && . "$i"
 done
 
 
@@ -540,6 +540,7 @@ check_option()
         ;;
     --verbose)            # HELPOPT: verbose mode
         verbose="--verbose"
+        quiet=''
         ;;
     --debug)              # HELPOPT: more debug output mode
         debug="--debug"
