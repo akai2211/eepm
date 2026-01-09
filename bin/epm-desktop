@@ -79,7 +79,8 @@ get_values()
 __get_api_url()
 {
     local package_name="$1"
-    echo "https://rdb.altlinux.org/api/package/package_info?name=$package_name&arch=$DISTRARCH&source=false&branch=$DISTRVERSION&full=false"
+    local branch="$(echo "$DISTRVERSION" | tr '[:upper:]' '[:lower:]')"
+    echo "https://rdb.altlinux.org/api/package/package_info?name=$package_name&arch=$DISTRARCH&source=false&branch=$branch&full=false"
 }
 
 # de
