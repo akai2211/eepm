@@ -43,7 +43,8 @@ __apply_fix_code()
     [ "$PROGDIR" = "/usr/bin" ] && SCPATH="$PATH" || SCPATH="$PROGDIR:$PATH"
     local bashopt=''
     [ -n "$debug" ] && bashopt='-x'
-    ( unset EPMCURDIR ; export PATH=$SCPATH ; docmd $CMDSHELL $bashopt $repackcode "$1" "$2" "$3" "$4" "$5" ) || fatal 'There is an error from $repackcode script'
+    showcmd $repackcode "$1" "$2" "$3" "$4" "$5"
+    ( unset EPMCURDIR ; export PATH=$SCPATH ; $CMDSHELL $bashopt $repackcode "$1" "$2" "$3" "$4" "$5" ) || fatal 'There is an error from $repackcode script'
 }
 
 __create_rpmmacros()

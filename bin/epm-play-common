@@ -75,7 +75,8 @@ __epm_play_run()
     [ -n "$debug" ] && bashopt='-x'
     #info "Running $($script --description 2>/dev/null) ..."
     [ "$PROGDIR" = "/usr/bin" ] && SCPATH="$PATH" || SCPATH="$PROGDIR:$PATH"
-    ( export EPM_OPTIONS="$EPM_OPTIONS $addopt" export PATH=$SCPATH ; docmd $CMDSHELL $bashopt $script "$@" )
+    showcmd $script "$@"
+    ( export EPM_OPTIONS="$EPM_OPTIONS $addopt" export PATH=$SCPATH ; $CMDSHELL $bashopt $script "$@" )
 }
 
 

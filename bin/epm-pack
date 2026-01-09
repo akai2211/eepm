@@ -69,7 +69,8 @@ __epm_pack_run_handler()
     [ -n "$debug" ] && bashopt='-x'
     #info "Running $($script --description 2>/dev/null) ..."
     # TODO: add url info here
-    ( unset BASH_ENV ; unset EPMCURDIR ; export PATH=$SCPATH ; export HOME=$(pwd) ; docmd $CMDSHELL $bashopt $packscript "$tarname" "$filefortarname" "$packversion" "$url" "$@") || fatal
+    showcmd $packscript "$tarname" "$filefortarname" "$packversion" "$url" "$@"
+    ( unset BASH_ENV ; unset EPMCURDIR ; export PATH=$SCPATH ; export HOME=$(pwd) ; $CMDSHELL $bashopt $packscript "$tarname" "$filefortarname" "$packversion" "$url" "$@") || fatal
     returntarname="$(cat "$filefortarname")" || fatal 'pack script $packscript didn'\''t set tarname'
 
     local i
