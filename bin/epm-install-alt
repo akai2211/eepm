@@ -293,15 +293,12 @@ apt_repo_after()
     $SUDO rm /etc/apt/apt.conf.d/eepm-apt-noninteractive.conf 2>/dev/null
 }
 
-# Process arguments in TASK or TASK:package format
+# Process arguments in TASK or TASK/package format
 prepare_task_packages()
 {
     # Sets global vars:
     #   installlist  — final list of packages to install
     #   unique_tasks — unique task names from args
-    #
-    # Local vars:
-    #   seen_tasks, task_packages, task, pkg
 
     installlist=""
     unique_tasks=""
@@ -309,30 +306,11 @@ prepare_task_packages()
     local task_packages=""
 
     for arg in "$@"; do
-        # Parse argument into task and package
-        # Supported formats: 123456, 123456/pkg, task/123456, task/123456/pkg
-        local task=""
-        local pkg=""
-        case "$arg" in
-            task/*/*)
-                # task/123456/pkg
-                task=$(printf "%s" "$arg" | cut -d/ -f2)
-                pkg=$(printf "%s" "$arg" | cut -d/ -f3)
-                ;;
-            task/*)
-                # task/123456
-                task=$(printf "%s" "$arg" | cut -d/ -f2)
-                ;;
-            */*)
-                # 123456/pkg
-                task=$(printf "%s" "$arg" | cut -d/ -f1)
-                pkg=$(printf "%s" "$arg" | cut -d/ -f2)
-                ;;
-            *)
-                # 123456
-                task="$arg"
-                ;;
-        esac
+        # Parse argument: 123456, 123456/pkg, task/123456, task/123456/pkg
+        local task="$(get_tasknumber_from_arg "$arg")"
+        local pkg="$(get_pkgname_from_taskarg "$arg")"
+
+        [ -n "$task" ] || continue
 
         # Fetch task packages once per unique task
         if ! echo " $seen_tasks " | grep -q " $task "; then
@@ -388,7 +366,11 @@ epm_install_alt_tasks()
     __epm_update
     (pkg_names="$installlist" epm_install)
     res=$?
-    epm_removerepo $unique_tasks
+    # remove repos one by one (epm_removerepo doesn't handle lists)
+    local task
+    for task in $unique_tasks ; do
+        epm_removerepo $task
+    done
     end_change_alt_repo
     return $res
 }
