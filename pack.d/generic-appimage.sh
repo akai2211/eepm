@@ -23,8 +23,7 @@ alpkg=$(basename $TAR)
 PRODUCT="$(basename $alpkg .AppImage)"
 
 # unpack AppImage
-[ -x "$TAR" ] || chmod u+x $verbose "$TAR"
-$TAR --appimage-extract >/dev/null || fatal
+erc unpack $TAR || fatal
 
 # try separate VERSION from PRODUCT
 if [ -z "$VERSION" ] ; then
@@ -34,7 +33,7 @@ if [ -z "$VERSION" ] ; then
     [ -n "$VERSION" ] && VERSION="$(echo "$VERSION" | sed -e 's|^v||')"
 fi
 
-BASEDIR="squashfs-root"
+BASEDIR="$PRODUCT"
 [ -L "$BASEDIR" ] && [ -d "AppDir" ] && BASEDIR="AppDir"
 
 # try get version from X-AppImage-Version

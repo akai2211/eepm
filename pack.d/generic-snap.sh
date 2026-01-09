@@ -11,17 +11,15 @@ if ! rhas "$TAR" "\.snap$" ; then
 fi
 
 alpkg=$(basename $TAR)
+BASEDIR=$(basename $TAR .snap)
 
-# improve me
-epm assure unsquashfs squashfs-tools || fatal
-a= unsquashfs $TAR || fatal
-
+erc unpack $TAR || fatal
 
 # name: plex-desktop
 # version: 1.69.1
 # summary: Plex for Linux
 # description:
-yaml_load_vars squashfs-root/meta/snap.yaml name version summary description
+yaml_load_vars $BASEDIR/meta/snap.yaml name version summary description
 
 [ -n "$name" ] || fatal "Can't get name from snap.yaml"
 [ -n "$version" ] || fatal "Can't get version from snap.yaml"
@@ -36,7 +34,7 @@ version="$(echo $version | sed 's/-/./g')"
 
 
 mkdir -p opt/
-mv squashfs-root opt/$name
+mv $BASEDIR opt/$name
 
 PKGNAME=$name-$version.tar
 
