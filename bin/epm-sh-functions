@@ -622,7 +622,11 @@ __get_package_for_command()
 confirm() {
     local response
     local prompt
-    prompt="$(eval_gettext "${1:-Are you sure? [y/N]}")"
+    if [ -n "$1" ] ; then
+        prompt="$(eval_gettext "$1")"
+    else
+        prompt="$(eval_gettext "Are you sure? [y/N]")"
+    fi
     read -r -p "$prompt " response
     case $response in
         [yY][eE][sS]|[yY])
