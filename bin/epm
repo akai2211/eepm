@@ -534,6 +534,8 @@ check_option()
     case $1 in
     -v|--version)         # HELPOPT: print version
         [ -n "$epm_cmd" ] && return 1
+        # check --short in all args
+        echo "$ALL_ARGS" | grep -q " --short " && short="--short"
         [ -n "$short" ] && echo "$EPMVERSION" | sed -e 's|-.*||' && exit 0
         print_version
         exit 0
@@ -675,6 +677,8 @@ for opt in $EPM_OPTIONS ; do
 done
 
 FLAGENDOPTS=
+# save all args for lookahead in check_option
+ALL_ARGS=" $* "
 # NOTE: can't use while read here: set vars inside
 for opt in "$@" ; do
 
