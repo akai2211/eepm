@@ -27,6 +27,7 @@ Options:
   --available           list only available packages
   --installed           list only installed packages
   --upgradable          list only upgradable packages
+  TASK                  list packages from ALT task (e.g., 404628 or task/404628)
 '
 #  --all                 list all packages (default)
 }
@@ -72,6 +73,14 @@ epm_list()
             return
             ;;
         *)
+            # check if it's a task number (e.g., 404628 or task/404628)
+            load_helper epm-sh-altlinux
+            if tasknumberprefix "$option" ; then
+                local task="$(get_tasknumber_from_arg "$option")"
+                [ -n "$task" ] || fatal "Can't extract task number from '$option'"
+                get_task_packages "$task"
+                return
+            fi
             fatal 'Unknown option $option, use epm list --help to get info'
             ;;
     esac
