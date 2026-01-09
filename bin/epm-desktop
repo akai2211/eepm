@@ -61,7 +61,7 @@ get_value()
     local de_name="$1"
     local key="$2"
 
-    get_json $de_name | parse_json_value "$key"
+    get_json_value "$(get_json $de_name)" "$key"
 }
 
 
@@ -71,7 +71,7 @@ get_values()
     local de_name="$1"
     local key="$2"
 
-    get_json $de_name | parse_json_values "$key" | xargs
+    get_json_values "$(get_json $de_name)" "$key" | xargs
 }
 
 
