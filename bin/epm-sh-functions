@@ -846,7 +846,7 @@ sudocmd_eget()
 {
     # use internal eget only if exists
     if [ -s $SHAREDIR/tools_eget ] ; then
-        ( sudocmd EGET_BACKEND="$eget_backend" $CMDSHELL "$SHAREDIR"/tools_eget "$@" )
+        sudocmd env EGET_BACKEND="$eget_backend" $CMDSHELL "$SHAREDIR"/tools_eget "$@"
         return
     fi
 }
