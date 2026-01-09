@@ -21,11 +21,13 @@ load_helper epm-play-common
 
 epm_prescription_help()
 {
-    message '
-Options:
-    <receipt>      - run <receipt>
-    --list-all     - list all available receipts
-'
+    message 'Usage: epm prescription [options] [receipt]'
+    echo ''
+    echog 'Options:'
+    get_help HELPOPT $SHAREDIR/epm-prescription
+    echo ''
+    echog 'Commands:'
+    get_help HELPCMD $SHAREDIR/epm-prescription
 }
 
 epm_prescription()
@@ -41,11 +43,13 @@ fi
 
 while [ -n "$1" ] ; do
 case "$1" in
-    -h|--help)
+    -h|--help)            # HELPOPT: show this help
         epm_prescription_help
         exit
         ;;
-    --remove)
+    --list-all)           # HELPOPT: list all available prescriptions
+        ;;
+    --remove)             # HELPOPT: remove installed prescription
         shift
         if [ -z "$1" ] ; then
             fatal "run --remove with receipt name"
@@ -53,6 +57,8 @@ case "$1" in
 
         __epm_play_remove "$@"
         exit
+        ;;
+    receipt)              # HELPCMD: run the prescription
         ;;
     -*)
         fatal "Unknown option $1"
