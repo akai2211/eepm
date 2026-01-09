@@ -19,6 +19,19 @@
 
 load_helper epm-sh-altlinux
 
+epm_repolist_help()
+{
+    message '
+epm repo list - list package repositories
+Usage: epm repo list [options] [pattern]
+
+Options:
+  -a, --all             show all repos (including disabled/commented)
+  --regex               use pattern as raw regex (no glob conversion)
+  pattern               filter repos by pattern (glob: * ?)
+'
+}
+
 __print_apt_sources_list()
 {
     local grepflags="$1"
@@ -104,14 +117,28 @@ print_apt_sources_list()
     local LISTS='/etc/apt/sources.list /etc/apt/sources.list.d/*.list'
 
     local flagall=''
-    if [ "$1" = "-a" ] || [ "$1" = "--all" ] ; then
-        flagall='--all'
+    local flagregex=''
+    while [ -n "$1" ] ; do
+        case "$1" in
+            -a|--all)
+                flagall=1
+                ;;
+            --regex)
+                flagregex=1
+                ;;
+            *)
+                break
+                ;;
+        esac
         shift
-    fi
+    done
 
     local wc="$*"
     local grepflags=""
-    if echo "$wc" | grep -q -E "^(deb|rpm) " ; then
+    if [ -n "$flagregex" ] ; then
+        # raw regex mode - no glob conversion
+        grepflags="-E"
+    elif echo "$wc" | grep -q -E "^(deb|rpm) " ; then
         grepflags="-F"
     else
         echo "$wc" | grep -q "\.[*?]" && warning "Only glob symbols * and ? are supported. Don't use regexp here!"
@@ -139,17 +166,17 @@ print_apt_sources_list()
 epm_repolist()
 {
 
+if [ "$1" = "-h" ] || [ "$1" = "--help" ] ; then
+    epm_repolist_help
+    return
+fi
+
 # TODO
 [ -z "$*" ] || [ "$PMTYPE" = "apt-rpm" ] || [ "$PMTYPE" = "apm-rpm" ] || [ "$PMTYPE" = "apt-dpkg" ] || fatal "No arguments are allowed here"
 
 case $PMTYPE in
     apt-rpm|apm-rpm)
-        if tasknumber "$1" >/dev/null ; then
-            # FIXME: unexpectedly, a list of packages instead of repositories.
-            get_task_packages "$@"
-        else
-            print_apt_sources_list "$@"
-        fi
+        print_apt_sources_list "$@"
         ;;
     deepsolver-rpm)
         docmd ds-conf
