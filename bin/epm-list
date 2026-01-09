@@ -19,18 +19,11 @@
 
 epm_list_help()
 {
-    message '
-epm list - list packages
-Usage: epm list [options] [package]
-
-Options:
-  --available           list only available packages
-  --installed           list only installed packages
-  --upgradable          list only upgradable packages
-  --programs            list packages that have GUI (.desktop files)
-  TASK                  list packages from ALT task (e.g., 404628 or task/404628)
+    message 'epm list - list packages
+Usage: epm list [options] [package]|[TASK]
 '
-#  --all                 list all packages (default)
+    get_help HELPOPT $SHAREDIR/epm-list
+    get_help HELPCMD $SHAREDIR/epm-list
 }
 
 epm_list()
@@ -47,36 +40,31 @@ epm_list()
     shift
 
     case "$option" in
-        -h|--help)
+        -h|--help)                # HELPOPT: show this help
             epm_list_help
             return
             ;;
-        #--all)
-        #    # TODO: exclude locally installed?
-        #    epm_list_available
-        #    return
-        #    ;;
-        --available)
-            # TODO: exclude locally installed?
+        --available)              # HELPOPT: list only available packages
             load_helper epm-list_available
             epm_list_available "$@"
             return
             ;;
-        --installed)
+        --installed)              # HELPOPT: list only installed packages
             load_helper epm-packages
             epm_packages "$@"
             return
             ;;
-        --upgradable)
-            # TODO: exclude locally installed?
+        --upgradable)             # HELPOPT: list only upgradable packages
             load_helper epm-list_upgradable
             epm_list_upgradable "$@"
             return
             ;;
-        --programs)
+        --programs)               # HELPOPT: list packages that have GUI (.desktop files)
             load_helper epm-programs
             epm_programs "$@"
             return
+            ;;
+        TASK)                     # HELPCMD: list packages from ALT task (e.g., 404628 or task/404628)
             ;;
         *)
             # check if it's a task number (e.g., 404628 or task/404628)
