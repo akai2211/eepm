@@ -86,7 +86,7 @@ eget_alt_contents_index()
     local TD="$2"
     local res
     [ -n "$USER" ] && [ -f $TD ] && sudorun chown -R $USER $TD
-    eget --compressed -O $TD $URL
+    eget --timestamping --compressed -O $TD $URL
     res=$?
     [ -f "$TD" ] && sudorun chmod a+rw "$TD"
     return $res
