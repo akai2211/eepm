@@ -178,7 +178,7 @@ epm_install_names()
                 selected="$(__epm_suggest_similar_packages_by_list $@)"
                 if [ -n "$selected" ] ; then
                     info "Installing selected: $selected"
-                    epm_install $selected
+                    epm_install_names $selected
                     return $?
                 fi
             fi
