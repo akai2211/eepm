@@ -27,6 +27,7 @@ Options:
   --available           list only available packages
   --installed           list only installed packages
   --upgradable          list only upgradable packages
+  --programs            list packages that have GUI (.desktop files)
   TASK                  list packages from ALT task (e.g., 404628 or task/404628)
 '
 #  --all                 list all packages (default)
@@ -70,6 +71,11 @@ epm_list()
             # TODO: exclude locally installed?
             load_helper epm-list_upgradable
             epm_list_upgradable "$@"
+            return
+            ;;
+        --programs)
+            load_helper epm-programs
+            epm_programs "$@"
             return
             ;;
         *)
