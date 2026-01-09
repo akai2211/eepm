@@ -1440,7 +1440,7 @@ __epm_suggest_similar_packages()
     # Interactive selection if enabled (via config or --interactive flag)
     if [ -n "$suggest_interactive$interactive" ] && inputisatty ; then
         local selected
-        selected="$(echo "$similar" | fzf --prompt="Select package: " --height=10 --reverse)"
+        selected="$(echo "$similar" | fzf --prompt="$(eval_gettext "Select package"): " --height=10 --reverse)"
         if [ -n "$selected" ] ; then
             echo "$selected"
             return 0
