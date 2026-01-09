@@ -36,7 +36,7 @@ SHAREDIR="$PROGDIR"
 # will replaced with /etc/eepm during install
 CONFIGDIR="$PROGDIR/../etc"
 
-export EPMVERSION="3.64.48"
+export EPMVERSION="3.64.49"
 
 # package, single (file), pipe, git
 EPMMODE="package"
@@ -511,8 +511,8 @@ set_sudo()
         return "$SUDO_TESTED"
     fi
 
-    # if input is a console and stderr is a console
-    if inputisatty && isatty2 ; then
+    # if /dev/tty is available and stderr is a console, sudo can ask for password
+    if [ -r /dev/tty ] && [ -w /dev/tty ] && isatty2 ; then
         if ! $SUDO_CMD -n true ; then
             info "Please enter sudo user password to use sudo for all privileged operations in the current session." >&2
             if ! $SUDO_CMD -l >/dev/null ; then
@@ -720,10 +720,16 @@ esu()
     fi
 }
 
+__escape_regex_special()
+{
+    # escape: \ . ^ $ | ( ) [ ] { } +
+    echo "$1" | sed -e 's|[\\.^$|(){}+]|\\&|g' -e 's|\[|\\[|g' -e 's|\]|\\]|g'
+}
+
 __convert_glob__to_regexp()
 {
-    # translate glob to regexp
-    echo "$1" | sed -e "s|\*|.*|g" -e "s|?|.|g"
+    # first escape regex special chars, then translate glob to regexp
+    __escape_regex_special "$1" | sed -e "s|\*|.*|g" -e "s|?|.|g"
 }
 
 regexp_subst()
@@ -851,19 +857,36 @@ calc_sha256sum()
     sha256sum "$1" | awk '{print $1}'
 }
 
+get_checksum_value()
+{
+    echo "$1" | sed 's/^[^:]*://'
+}
+
+calc_checksum()
+{
+    local spec="$1"
+    local file="$2"
+    case "${spec%%:*}" in
+        md5|md5hash)
+            md5sum "$file" ;;
+        sha1|sha1hash)
+            sha1sum "$file" ;;
+        sha512|sha512hash)
+            sha512sum "$file" ;;
+        *)
+            sha256sum "$file" ;;
+    esac | awk '{print $1}'
+}
+
 print_sha256sum()
 {
-    if ! is_command sha256sum ; then
-        info "sha256sum is missed, can't print sha256 for packages..."
-        return
-    fi
-
     local checksum=''
     if [ "$1" = "--checksum" ] ; then
         checksum="$2"
         shift 2
-        pcs="$(calc_sha256sum "$1")"
-        [ "$checksum" = "$pcs" ] || fatal "Checksum verification failed. Awaited checksum: $checksum, package checksum: $pcs"
+        local expected="$(get_checksum_value "$checksum")"
+        local pcs="$(calc_checksum "$checksum" "$1")"
+        [ "$expected" = "$pcs" ] || fatal "Checksum verification failed (${checksum%%:*}). Awaited: $expected, got: $pcs"
     fi
 
     local files="$*"
@@ -892,7 +915,7 @@ get_json_value()
         toutput="$(fetch_url "$1")" || return
         echo "$toutput" | parse_json_value "$2"
     else
-        [ -s "$1" ] || fatal "File $1 is missed, can't get json"
+        [ -s "$1" ] || fatal "File $1 is missing, can't get JSON"
         parse_json_value "$2" < "$1"
     fi
 }
@@ -911,7 +934,7 @@ get_json_values()
         toutput="$(fetch_url "$1")" || return
         echo "$toutput" | parse_json_values "$2"
     else
-        [ -s "$1" ] || fatal "File $1 is missed, can't get json"
+        [ -s "$1" ] || fatal "File $1 is missing, can't get JSON"
         parse_json_values "$2" < "$1"
     fi
 }
@@ -1225,7 +1248,9 @@ has_space()
 
 is_url()
 {
-    echo "$1" | grep -q "^[filehtps]*:/"
+    echo "$1" | grep -qE "^(file|ftp|http|https|rsync):/" && return 0
+    # SSH/rsync URL: host:/path or user@host:/path (but not scheme://)
+    echo "$1" | grep -qE '^[^:]+:/' && ! echo "$1" | grep -q "://"
 }
 
 if a= type -a type 2>/dev/null >/dev/null ; then
@@ -1274,6 +1299,34 @@ subst()
     sed -i -e "$@"
 }
 fi
+
+__epm_suggest_similar_packages()
+{
+    local pkg="$1"
+    local cache="$epm_vardir/available-packages"
+
+    # need cache file
+    [ -s "$cache" ] || return 1
+
+    # need fzf for fuzzy search
+    is_command fzf || return 1
+
+    local similar
+    similar="$(fzf -f "$pkg" < "$cache" 2>/dev/null | head -3)"
+    [ -z "$similar" ] && return 1
+
+    echo ""
+    echo "Perhaps you meant:"
+    echo "$similar" | sed 's/^/  /'
+}
+
+__epm_suggest_similar_packages_by_list()
+{
+    local pkg
+    for pkg in "$@" ; do
+        __epm_suggest_similar_packages "$pkg"
+    done
+}
 
 check_core_commands()
 {
@@ -3602,7 +3655,7 @@ get_value()
     local de_name="$1"
     local key="$2"
 
-    get_json $de_name | parse_json_value "$key"
+    get_json_value "$(get_json $de_name)" "$key"
 }
 
 
@@ -3611,14 +3664,15 @@ get_values()
     local de_name="$1"
     local key="$2"
 
-    get_json $de_name | parse_json_values "$key" | xargs
+    get_json_values "$(get_json $de_name)" "$key" | xargs
 }
 
 
 __get_api_url()
 {
     local package_name="$1"
-    echo "https://rdb.altlinux.org/api/package/package_info?name=$package_name&arch=$DISTRARCH&source=false&branch=$DISTRVERSION&full=false"
+    local branch="$(echo "$DISTRVERSION" | tr '[:upper:]' '[:lower:]')"
+    echo "https://rdb.altlinux.org/api/package/package_info?name=$package_name&arch=$DISTRARCH&source=false&branch=$branch&full=false"
 }
 
 get_main_package()
@@ -3772,6 +3826,16 @@ list_des()
     echo ']'
 }
 
+
+list_installed_des()
+{
+    local de de_name
+    for de in $CONFIGDIR/desktop.d/*.json ; do
+        de_name="$(basename "$de" .json)" || fatal
+        is_de_installed "$de_name" && echo "$de_name"
+    done
+}
+
 epm_desktop_help()
 {
     message 'Usage: epm desktop <command> [--json] [option]'
@@ -3815,8 +3879,11 @@ epm_desktop()
             check_if_de_exists "$1"
             get_de_info "$1" $json_flag
             ;;
-        list)                         # HELPCMD:             List all available desktop environments'
+        list)                         # HELPCMD:             List all available desktop environments
             list_des $json_flag
+            ;;
+        list-installed)               # HELPCMD:             List installed desktop environments
+            list_installed_des
             ;;
         installed)
             is_de_installed "$1"
@@ -5035,6 +5102,28 @@ esac
 # File bin/epm-info:
 
 
+epm_info_help()
+{
+    message '
+epm info - print package information
+Usage: epm info [options] <package>
+
+Options:
+  -h, --help        show this help
+  --requires        print package requires (dependencies)
+  --provides        print package provides
+  --conflicts       print package conflicts
+  --obsoletes       print packages obsoleted by this package
+  --recommends      print recommended packages
+  --suggests        print suggested packages
+  --changelog       print package changelog
+  --whatdepends     print packages that depend on this
+  --whatprovides    print packages that provide the target
+
+Without options prints general package information.
+'
+}
+
 __epm_info_rpm_low()
 {
     if [ -n "$pkg_files" ] ; then
@@ -5186,18 +5275,292 @@ esac
 
 epm_info()
 {
+    case "$pkg_options" in
+        -h|--help)
+            epm_info_help
+            return
+            ;;
+        --requires)
+            epm_requires
+            return
+            ;;
+        --provides)
+            epm_provides
+            return
+            ;;
+        --conflicts)
+            epm_conflicts
+            return
+            ;;
+        --obsoletes)
+            epm_info_obsoletes
+            return
+            ;;
+        --recommends)
+            epm_info_recommends
+            return
+            ;;
+        --suggests)
+            epm_info_suggests
+            return
+            ;;
+        --changelog)
+            epm_changelog
+            return
+            ;;
+        --whatdepends)
+            epm_whatdepends
+            return
+            ;;
+        --whatprovides)
+            epm_whatprovides
+            return
+            ;;
+    esac
 
-if [ -n "$pkg_urls" ] ; then
-    __handle_pkg_urls_to_checking
-fi
+    # if possible, it will put pkg_urls into pkg_files or pkg_names
+    if [ -n "$pkg_urls" ] ; then
+        __handle_pkg_urls_to_checking
+    fi
 
-[ -n "$pkg_filenames" ] || fatal "Info: package name is missed"
+    if [ -z "$pkg_filenames" ] ; then
+        epm_info_help >&2
+        exit 1
+    fi
 
-__epm_info_by_pkgtype || __epm_info_by_pmtype
+    __epm_info_by_pkgtype || __epm_info_by_pmtype
 
-local RETVAL=$?
+    return $?
+}
 
-return $RETVAL
+# File bin/epm-info_obsoletes:
+
+
+epm_info_obsoletes_files()
+{
+    [ -n "$pkg_files" ] || return
+
+    local pkg
+    for pkg in $pkg_files ; do
+        case $(get_package_type $pkg) in
+            rpm)
+                docmd rpm -q --obsoletes -p $pkg
+                ;;
+            deb)
+                a='' docmd dpkg -I $pkg | grep "^ *Replaces:" | sed "s|^ *Replaces:||g"
+                ;;
+            *)
+                warning "Obsoletes: unsupported package type for $pkg"
+                ;;
+        esac
+    done
+}
+
+epm_info_obsoletes_names()
+{
+    [ -n "$pkg_names" ] || return
+
+    case $PMTYPE in
+        apt-rpm)
+            if is_installed $pkg_names ; then
+                docmd rpm -q --obsoletes $pkg_names
+            else
+                EXTRA_SHOWDOCMD=' | grep "Obsoletes:"'
+                docmd apt-cache show $pkg_names | grep "^Obsoletes:" | sed "s|^Obsoletes:||g"
+            fi
+            ;;
+        apt-dpkg|aptitude-dpkg)
+            if is_installed $pkg_names ; then
+                showcmd dpkg -s $pkg_names
+                a='' dpkg -s $pkg_names | grep "^Replaces:" | sed "s|^Replaces:||g"
+            else
+                EXTRA_SHOWDOCMD=' | grep "Replaces:"'
+                docmd apt-cache show $pkg_names | grep "^Replaces:" | sed "s|^Replaces:||g"
+            fi
+            ;;
+        dnf-rpm|dnf5-rpm)
+            if is_installed $pkg_names ; then
+                docmd rpm -q --obsoletes $pkg_names
+            else
+                docmd dnf repoquery --obsoletes $pkg_names
+            fi
+            ;;
+        yum-rpm)
+            docmd rpm -q --obsoletes $pkg_names
+            ;;
+        urpm-rpm|zypper-rpm)
+            docmd rpm -q --obsoletes $pkg_names
+            ;;
+        pacman)
+            if is_installed $pkg_names ; then
+                docmd pacman -Qi $pkg_names | grep "^Replaces"
+            else
+                docmd pacman -Si $pkg_names | grep "^Replaces"
+            fi
+            ;;
+        *)
+            fatal 'Have no suitable command for $PMTYPE in epm_info_obsoletes()'
+            ;;
+    esac
+}
+
+epm_info_obsoletes()
+{
+    [ -n "$pkg_filenames" ] || fatal "Obsoletes: package name is missed"
+
+    epm_info_obsoletes_files
+    epm_info_obsoletes_names
+}
+
+# File bin/epm-info_recommends:
+
+
+epm_info_recommends_files()
+{
+    [ -n "$pkg_files" ] || return
+
+    local pkg
+    for pkg in $pkg_files ; do
+        case $(get_package_type $pkg) in
+            rpm)
+                docmd rpm -q --recommends -p $pkg
+                ;;
+            deb)
+                a='' docmd dpkg -I $pkg | grep "^ *Recommends:" | sed "s|^ *Recommends:||g"
+                ;;
+            *)
+                warning "Recommends: unsupported package type for $pkg"
+                ;;
+        esac
+    done
+}
+
+epm_info_recommends_names()
+{
+    [ -n "$pkg_names" ] || return
+
+    case $PMTYPE in
+        apt-rpm)
+            if is_installed $pkg_names ; then
+                docmd rpm -q --recommends $pkg_names
+            else
+                EXTRA_SHOWDOCMD=' | grep "Recommends:"'
+                docmd apt-cache show $pkg_names | grep "^Recommends:" | sed "s|^Recommends:||g"
+            fi
+            ;;
+        apt-dpkg|aptitude-dpkg)
+            if is_installed $pkg_names ; then
+                showcmd dpkg -s $pkg_names
+                a='' dpkg -s $pkg_names | grep "^Recommends:" | sed "s|^Recommends:||g"
+            else
+                EXTRA_SHOWDOCMD=' | grep "Recommends:"'
+                docmd apt-cache show $pkg_names | grep "^Recommends:" | sed "s|^Recommends:||g"
+            fi
+            ;;
+        dnf-rpm|dnf5-rpm)
+            if is_installed $pkg_names ; then
+                docmd rpm -q --recommends $pkg_names
+            else
+                docmd dnf repoquery --recommends $pkg_names
+            fi
+            ;;
+        yum-rpm)
+            docmd rpm -q --recommends $pkg_names
+            ;;
+        urpm-rpm|zypper-rpm)
+            docmd rpm -q --recommends $pkg_names
+            ;;
+        pacman)
+            if is_installed $pkg_names ; then
+                docmd pacman -Qi $pkg_names | grep "^Optional Deps"
+            else
+                docmd pacman -Si $pkg_names | grep "^Optional Deps"
+            fi
+            ;;
+        *)
+            fatal 'Have no suitable command for $PMTYPE in epm_info_recommends()'
+            ;;
+    esac
+}
+
+epm_info_recommends()
+{
+    [ -n "$pkg_filenames" ] || fatal "Recommends: package name is missed"
+
+    epm_info_recommends_files
+    epm_info_recommends_names
+}
+
+# File bin/epm-info_suggests:
+
+
+epm_info_suggests_files()
+{
+    [ -n "$pkg_files" ] || return
+
+    local pkg
+    for pkg in $pkg_files ; do
+        case $(get_package_type $pkg) in
+            rpm)
+                docmd rpm -q --suggests -p $pkg
+                ;;
+            deb)
+                a='' docmd dpkg -I $pkg | grep "^ *Suggests:" | sed "s|^ *Suggests:||g"
+                ;;
+            *)
+                warning "Suggests: unsupported package type for $pkg"
+                ;;
+        esac
+    done
+}
+
+epm_info_suggests_names()
+{
+    [ -n "$pkg_names" ] || return
+
+    case $PMTYPE in
+        apt-rpm)
+            if is_installed $pkg_names ; then
+                docmd rpm -q --suggests $pkg_names
+            else
+                EXTRA_SHOWDOCMD=' | grep "Suggests:"'
+                docmd apt-cache show $pkg_names | grep "^Suggests:" | sed "s|^Suggests:||g"
+            fi
+            ;;
+        apt-dpkg|aptitude-dpkg)
+            if is_installed $pkg_names ; then
+                showcmd dpkg -s $pkg_names
+                a='' dpkg -s $pkg_names | grep "^Suggests:" | sed "s|^Suggests:||g"
+            else
+                EXTRA_SHOWDOCMD=' | grep "Suggests:"'
+                docmd apt-cache show $pkg_names | grep "^Suggests:" | sed "s|^Suggests:||g"
+            fi
+            ;;
+        dnf-rpm|dnf5-rpm)
+            if is_installed $pkg_names ; then
+                docmd rpm -q --suggests $pkg_names
+            else
+                docmd dnf repoquery --suggests $pkg_names
+            fi
+            ;;
+        yum-rpm)
+            docmd rpm -q --suggests $pkg_names
+            ;;
+        urpm-rpm|zypper-rpm)
+            docmd rpm -q --suggests $pkg_names
+            ;;
+        *)
+            fatal 'Have no suitable command for $PMTYPE in epm_info_suggests()'
+            ;;
+    esac
+}
+
+epm_info_suggests()
+{
+    [ -n "$pkg_filenames" ] || fatal "Suggests: package name is missed"
+
+    epm_info_suggests_files
+    epm_info_suggests_names
 }
 
 # File bin/epm-install:
@@ -5238,17 +5601,6 @@ __separate_sudocmd()
     return 0
 }
 
-VALID_BACKENDS="apt-rpm apt-dpkg apm-rpm stplr aptitude-dpkg deepsolver-rpm urpm-rpm packagekit pkgsrc pkgng redox-pkg emerge pacman yay aura yum-rpm dnf-rpm snappy zypper-rpm mpkg eopkg conary npackd slackpkg homebrew opkg nix apk tce guix termux-pkg aptcyg xbps appget winget"
-__get_tpmtype() {
-    local arg="$1"
-    local tpmtype="$(echo "$arg" | cut -d: -f1)"
-
-    # need first three chars
-    echo "$arg" | grep -q "^[a-z][a-z][a-z-]*:" || return
-
-    echo "$VALID_BACKENDS" | tr ' ' '\n' | grep -w "^$tpmtype"
-}
-
 VALID_BRANCH="p8 p9 p10 p11 Sisyphus c10f2"
 __set_repo_name() {
     local arg="$1"
@@ -5260,37 +5612,6 @@ __set_repo_name() {
 
     trepo="$(echo "$VALID_BRANCH" | tr ' ' '\n' | grep -w "^$trepo")"
     [ -n "$trepo" ] && repo="$trepo" && name=$(echo "$arg" | cut -d/ -f2)
-}
-
-
-process_package_arguments() {
-    local pmtype
-    local name
-    local arg
-    local package_groups
-    declare -A package_groups
-    for arg in "$@"; do
-        pmtype=$PMTYPE
-        name="$arg"
-        case "$arg" in
-            *:*)
-                local tpmtype="$(__get_tpmtype "$arg")"
-                if [ -n "$tpmtype" ] ; then
-                    pmtype=$tpmtype
-                    # copied from distr_info
-                    if [ "$pmtype" = "dnf-rpm" ] && a= dnf --version | grep -qi "dnf5" ; then
-                        pmtype="dnf5-rpm"
-                    fi
-                    name=$(echo "$arg" | cut -d: -f2)
-                fi
-                ;;
-        esac
-        package_groups["$pmtype"]+="$name "
-    done
-
-    for pmtype in "${!package_groups[@]}"; do
-        (PMTYPE="$pmtype" PPARGS=1 epm_install_names ${package_groups[$pmtype]})
-    done
 }
 
 
@@ -5332,7 +5653,7 @@ epm_install_names()
 
     # check some like nix: prefix, PPARGS for stop possible recursion. TODO
     if echo "$*" | grep -q -E '(^| )[a-z][a-z][a-z]*:' && [ -z "$PPARGS" ] ; then
-        process_package_arguments "$@"
+        __process_backend_arguments epm_install_names "$@"
         return
     fi
 
@@ -5377,8 +5698,14 @@ epm_install_names()
                 __epm_alt_download_to_cache $VIRTAPTOPTIONS $APTOPTIONS $noremove install $@
             fi
 
-            sudocmd apt-get $VIRTAPTOPTIONS $APTOPTIONS $noremove install $@ && save_installed_packages $@
-            return ;;
+            sudocmd apt-get $VIRTAPTOPTIONS $APTOPTIONS $noremove install $@
+            local res=$?
+            if [ "$res" = 0 ] ; then
+                save_installed_packages $@
+            elif [ "$res" = 100 ] ; then
+                __epm_suggest_similar_packages_by_list $@
+            fi
+            return $res ;;
         apm-rpm)
             sudocmd apm system install $@
             local res=$?
@@ -5503,10 +5830,14 @@ epm_ni_install_names()
     case $PMTYPE in
         apt-rpm)
             sudocmd apt-get -y $noremove --force-yes -o APT::Install::VirtualVersion=true -o APT::Install::Virtual=true -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" $APTOPTIONS install $@
-            return ;;
+            local res=$?
+            [ "$res" = 100 ] && __epm_suggest_similar_packages_by_list $@
+            return $res ;;
         apt-dpkg)
             sudocmd env ACCEPT_EULA=y DEBIAN_FRONTEND=noninteractive apt-get -y $noremove --force-yes -o APT::Install::VirtualVersion=true -o APT::Install::Virtual=true -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" $APTOPTIONS install $@
-            return ;;
+            local res=$?
+            [ "$res" = 100 ] && __epm_suggest_similar_packages_by_list $@
+            return $res ;;
         apm-rpm)
             sudocmd apm system install $@
             return ;;
@@ -8144,8 +8475,10 @@ Options:
     --remove <app>        - uninstall <app>
     --update [<app>|all]  - update <app> (or all installed apps) if there is new version
     --latest <app>        - forced to install the latest version of the application
+    --print-url <app>     - print download URL for the app (do not install)
     --list                - list all installed apps
     --list-all            - list all available apps
+    --search <pattern>    - search available apps by name or description
     --list-scripts        - list all available scripts
     --short (with --list) - list names only
     --installed <app>     - check if the app is installed
@@ -8183,6 +8516,11 @@ __epm_play_update()
             if ! __is_app_installed "$i" ; then
                 continue
             fi
+            local pkgname="$(__get_app_package "$i")"
+            if [ -n "$pkgname" ] && epm mark checkhold "$pkgname" 2>/dev/null ; then
+                info "Skipping $i: package $pkgname is on hold"
+                continue
+            fi
         prescription="$i"
         if ! has_play_script $prescription ; then
             warning "Can't find executable play script for $prescription. Try epm play --remove $prescription if you don't need it anymore."
@@ -8206,7 +8544,13 @@ __epm_play_install_one()
     else
         local opsdir=$psdir
         psdir=$prsdir
-        has_play_script "$prescription" || fatal "We have no idea how to play $prescription (checked in $opsdir and $prsdir)"
+        if ! has_play_script "$prescription" ; then
+            psdir=$opsdir
+            echo "Unknown app '$prescription'." >&2
+            [ -n "$verbose" ] && echo "Checked in $opsdir and $prsdir" >&2
+            __epm_play_suggest_similar_apps "$prescription"
+            return 1
+        fi
         __epm_play_run "$prescription" --run "$@" || fatal "There was some error during run $prescription script."
     fi
 }
@@ -8292,6 +8636,22 @@ __epm_play_install()
 {
    local i RES
    RES=0
+
+   # Handle --installed flag when passed after app name (e.g., "epm play app --installed")
+   local has_installed=0
+   for i in $* ; do
+       [ "$i" = "--installed" ] && has_installed=1 && break
+   done
+
+   if [ "$has_installed" = "1" ] ; then
+       local RES=0
+       while [ -n "$1" ] ; do
+           [ "$1" = "--installed" ] && break
+           __is_app_installed "$1" || RES=1
+           shift
+       done
+       return $RES
+   fi
 
 
    update_repo_if_needed
@@ -8483,6 +8843,13 @@ case "$1" in
         exit
         ;;
 
+    --search)
+        shift
+        [ -n "$1" ] || fatal "Search pattern is required"
+        __epm_play_search "$1"
+        exit
+        ;;
+
     --list-scripts)
         [ -n "$short" ] || [ -n "$quiet" ] || echo "Run with a name of a play script to run:"
         __epm_play_list $prsdir
@@ -8496,6 +8863,10 @@ case "$1" in
     --latest)
         shift
         export latest="true"
+        ;;
+    --print-url)
+        shift
+        export EPM_OPTIONS="$EPM_OPTIONS --print-url"
         ;;
     -*)
         fatal "Unknown option $1"
@@ -8613,6 +8984,29 @@ __get_fast_int_list_app()
     grep -l -E "^SUPPORTEDARCHES=(''|\"\"|.*\<$arch\>)" $psdir/*.sh | xargs grep -oP "^DESCRIPTION=[\"']*\K[^\"']+"  | sed -e "s|.*/\(.*\).sh:|\1$RIFS|" | grep -v -E "(^$IGNOREi586|^common|#.*$)"
 }
 
+__epm_play_suggest_similar_apps()
+{
+    local app="$1"
+    local arch="$SYSTEMARCH"
+
+    # need fzf for fuzzy search
+    is_command fzf || return 1
+
+    local list
+    list="$(__get_fast_short_list_app $arch)"
+    [ -z "$list" ] && return 1
+
+    [ -n "$verbose" ] && showcmd fzf -i -f "$app"
+    local similar
+    similar="$(echo "$list" | fzf -i -f "$app" 2>/dev/null | head -5)"
+    [ -z "$similar" ] && return 1
+
+    echo ""
+    echo "Perhaps you meant:"
+    echo "$similar" | sed 's/^/  /'
+}
+
+
 __epm_play_list()
 {
     local psdir="$1"
@@ -8658,6 +9052,18 @@ __epm_play_list()
                 fi
             done
         fi
+    done
+}
+
+
+__epm_play_search()
+{
+    local pattern="$1"
+    local arch="$SYSTEMARCH"
+    local RIFS=$'\x1E'
+
+    __get_fast_int_list_app $arch | grep -i "$pattern" | while IFS=$'\x1E' read -r app desc; do
+        printf "  %-25s - %s\n" "$app" "$desc"
     done
 }
 
@@ -10969,6 +11375,12 @@ epm_remove_names()
 {
     [ -z "$1" ] && return
 
+    # check some like nix: prefix, PPARGS for stop possible recursion
+    if echo "$*" | grep -q -E '(^| )[a-z][a-z][a-z]*:' && [ -z "$PPARGS" ] ; then
+        __process_backend_arguments epm_remove_names "$@"
+        return
+    fi
+
     warmup_bases
 
     local APTOPTIONS="$(subst_option non_interactive -y)"
@@ -11197,6 +11609,12 @@ epm_remove()
 {
     if [ -n "$show_command_only" ] ; then
         epm_print_remove_command $pkg_filenames
+        return
+    fi
+
+    # handle backend:package syntax directly
+    if echo "$pkg_names" | grep -q -E '(^| )[a-z][a-z][a-z]*:' ; then
+        epm_remove_names $pkg_names
         return
     fi
 
@@ -11577,6 +11995,9 @@ __epm_repack_copy()
 {
     local abspkg="$1"
     local target="$2"
+
+    # skip if source and target are the same file
+    [ "$abspkg" -ef "$target" ] && return 0
 
     # if source file is not writable, try CoW or fallback to ordinal copy
     #if [ ! -w "$abspkg" ] ; then
@@ -13340,7 +13761,7 @@ __epm_repo_pkgdel_alt()
         [ -d "$rd" ] && REPO_NAME="$(echo "$rd" | sed -e 's|.*\.||')" && break
     done
 
-    while [ -s "$1" ] ; do
+    while [ -n "$1" ] ; do
         for arch in $archlist ; do
             local rd="$REPO_DIR/$arch/RPMS.$REPO_NAME"
             [ -d $REPO_DIR/$arch/RPMS.$REPO_NAME ] || continue
@@ -14639,6 +15060,12 @@ epm_search()
 {
     [ -n "$1" ] || fatal "Search: search argument(s) is missed"
 
+    # check backend:package syntax
+    if echo "$*" | grep -q -E '(^| )[a-z][a-z][a-z]*:' && [ -z "$PPARGS" ] ; then
+        __process_backend_arguments __epm_search_internal "$@"
+        return
+    fi
+
     # it is useful for first time running
     update_repo_if_needed soft
 
@@ -14834,7 +15261,9 @@ get_alt_repo_path()
     local BN3=$(basename $DN3) # ALTLinux/
 
     [ "$BN1" = "branch" ] && echo "$BN3/$BN2/$BN1/$BN0" && return
-    [ "$BN1" = "Sisyphus" ] && echo "$BN2/$BN1/$BN0"
+    [ "$BN1" = "Sisyphus" ] && echo "$BN2/$BN1/$BN0" && return
+    # Fallback for non-standard repos: use last 4 path components
+    echo "$BN3/$BN2/$BN1/$BN0"
 }
 
 get_local_alt_mirror_path()
@@ -15028,6 +15457,57 @@ update_alt_contents_index()
     done
 }
 
+
+# File bin/epm-sh-backend:
+
+VALID_BACKENDS="apt-rpm apt-dpkg apm-rpm stplr aptitude-dpkg deepsolver-rpm urpm-rpm packagekit pkgsrc pkgng redox-pkg emerge pacman yay aura yum-rpm dnf-rpm snappy zypper-rpm mpkg eopkg conary npackd slackpkg homebrew opkg nix apk tce guix termux-pkg aptcyg xbps appget winget"
+
+__get_tpmtype() {
+    local arg="$1"
+    local tpmtype="$(echo "$arg" | cut -d: -f1)"
+
+    # need first three chars
+    echo "$arg" | grep -q "^[a-z][a-z][a-z-]*:" || return
+
+    # aliases
+    [ "$tpmtype" = "pkcon" ] && tpmtype="packagekit"
+    # use same suffix as current PMTYPE for ambiguous backends
+    [ "$tpmtype" = "apt" ] && tpmtype="apt-${PMTYPE#*-}"
+
+    echo "$VALID_BACKENDS" | tr ' ' '\n' | grep -w "^$tpmtype" | head -1
+}
+
+__process_backend_arguments() {
+    local func="$1"
+    shift
+    local pmtype
+    local name
+    local arg
+    local package_groups
+    declare -A package_groups
+    for arg in "$@"; do
+        pmtype=$PMTYPE
+        name="$arg"
+        case "$arg" in
+            *:*)
+                local tpmtype="$(__get_tpmtype "$arg")"
+                if [ -n "$tpmtype" ] ; then
+                    pmtype=$tpmtype
+                    # copied from distr_info
+                    if [ "$pmtype" = "dnf-rpm" ] && a= dnf --version | grep -qi "dnf5" ; then
+                        pmtype="dnf5-rpm"
+                    fi
+                    name=$(echo "$arg" | cut -d: -f2)
+                fi
+                ;;
+        esac
+        package_groups["$pmtype"]+="$name "
+    done
+
+    for pmtype in "${!package_groups[@]}"; do
+        (PMTYPE="$pmtype" PPARGS=1 $func ${package_groups[$pmtype]})
+    done
+}
 
 # File bin/epm-sh-install:
 
@@ -18183,8 +18663,25 @@ is_ipfsurl()
 is_httpurl()
 {
     # TODO: improve
-    echo "$1" | grep -q "^https://" & return
-    echo "$1" | grep -q "^http://" & return
+    echo "$1" | grep -q "^https://" && return
+    echo "$1" | grep -q "^http://" && return
+}
+
+is_ftpurl()
+{
+    echo "$1" | grep -q "^ftp://"
+}
+
+is_rsyncurl()
+{
+    echo "$1" | grep -q "^rsync://"
+}
+
+# SSH/rsync URL: user@host:/path or host:/path (but not scheme://)
+is_sshurl()
+{
+    # Match host:path or host:/path, but not scheme://
+    echo "$1" | grep -qE '^[^/:]+:' && ! echo "$1" | grep -q "://"
 }
 
 cid_from_url()
@@ -18195,6 +18692,8 @@ cid_from_url()
 
 # args: cmd <URL> <options>
 # will run cmd <options> <URL>
+# If CHECKMIRRORS is set and EGET_MIRRORS contains mirror hosts,
+# will try each mirror on failure
 download_with_mirroring()
 {
     local CMD="$1"
@@ -18207,13 +18706,15 @@ download_with_mirroring()
     res=$?
     [ -n "$CHECKMIRRORS" ] || return $res
 
-    MIRROR="https://mirror.eterfund.ru"
-    SECONDURL="$(echo "$URL" | sed -e "s|^.*://|$MIRROR/|")"
-    $CMD "$@" "$SECONDURL" && URL="$SECONDURL" && return
-
-    MIRROR="https://mirror.eterfund.org"
-    SECONDURL="$(echo "$URL" | sed -e "s|^.*://|$MIRROR/|")"
-    $CMD "$@" "$SECONDURL" && URL="$SECONDURL" && return
+    # Default mirrors if EGET_MIRRORS is not set
+    local mirrors="${EGET_MIRRORS:-https://mirror.eterfund.ru https://mirror.eterfund.org}"
+    local MIRROR SECONDURL
+    for MIRROR in $mirrors ; do
+        # Replace protocol:// with mirror/, preserving original host as path component
+        SECONDURL="$(echo "$URL" | sed -e "s|^[a-z]*://|$MIRROR/|")"
+        $CMD "$@" "$SECONDURL" && return
+    done
+    return $res
 }
 
 
@@ -18225,9 +18726,7 @@ verbose=''
 WGETNOSSLCHECK=''
 CURLNOSSLCHECK=''
 AXELNOSSLCHECK=''
-WGETUSERAGENT=''
-CURLUSERAGENT=''
-AXELUSERAGENT=''
+USERAGENT=''
 WGETHEADER=''
 CURLHEADER=''
 AXELHEADER=''
@@ -18238,7 +18737,6 @@ WGETQ='' #-q
 CURLQ='' #-s
 AXELQ='' #-q
 ARIA2Q=''
-AXELQ=''
 # TODO: 
 WGETNAMEOPTIONS='--content-disposition'
 CURLFILENAMEOPTIONS='--remote-name --remote-time --remote-header-name'
@@ -18247,15 +18745,10 @@ AXELNAMEOPTIONS=''
 WGETRUSTSERVERNAMES=''
 CURLTRUSTSERVERNAMES=''
 
-CURLOUTPUTDIR=''
-WGETOUTPUTDIR=''
 USEOUTPUTDIR=''
-ARIA2OUTPUTDIR=''
-AXELOUTPUTDIR=''
 WGETNODIRECTORIES=''
-WGETCONTINUE=''
-CURLCONTINUE=''
-ARIA2CONTINUE=''
+CONTINUE=''
+FORCEOVERWRITE=''
 WGETTIMEOUT=''
 CURLMAXTIME=''
 WGETREADTIMEOUT=''
@@ -18280,14 +18773,20 @@ CHECKMIRRORS=''
 TARGETFILE=''
 FORCEIPV=''
 
+WGETSHOWPROGRESS=''
+CURLSHOWPROGRESS=''
+ARIA2SHOWPROGRESS=''
+AXELSHOWPROGRESS=''
+
+TIMESTAMPING=''
+INPUTFILE=''
 
 set_quiet()
 {
     WGETQ='-q'
     CURLQ='-s'
-    AXELQ='-q'
-    ARIA2Q=''
     AXELQ='--quiet'
+    ARIA2Q=''
     quiet=1
 }
 
@@ -18297,7 +18796,6 @@ unset_quiet()
     CURLQ=''
     AXELQ=''
     ARIA2Q=''
-    AXELQ=''
     quiet=''
 }
 
@@ -18312,6 +18810,7 @@ Usage: eget [options] http://somesite.ru/dir/na*.log
 Options:
     -q|--quiet                - quiet mode
     --verbose                 - verbose mode
+    --show-progress           - display progress bar even in quiet mode
     -k|--no-check-certificate - skip SSL certificate chain support
     --no-content-disposition  - skip Content-Disposition header
     -H|--header               - use <header> (X-Cache:1 for example)
@@ -18326,6 +18825,9 @@ Options:
     -nd|--no-directories      - do not create a hierarchy of directories when retrieving recursively
     --no-glob                 - turn off file name globbing
     -c|--continue             - continue getting a partially-downloaded file
+    --force|--allow-overwrite - force overwrite existing file
+    -N|--timestamping         - only download if remote file is newer than local
+    -i|--input-file FILE      - read URLs from FILE, one per line; each line can contain multiple mirror URLs (use - for stdin)
     -T|--timeout=N            - set  the network timeout to N seconds
     --read-timeout=N          - set the read (and write) timeout to N seconds
     --retry-connrefused       - consider “connection refused” a transient error and try again
@@ -18333,7 +18835,7 @@ Options:
     --load-cookies file       - load cookies from file before the first HTTP retrieval
     --latest                  - print only latest version of a file
     --second-latest           - print only second to latest version of a file
-    --allow-mirrors           - check mirrors if url is not accessible
+    --allow-mirrors           - try mirrors from EGET_MIRRORS if url is not accessible
     --trust-server-names      - use the name specified by the redirection
 
     --list|--list-only        - print only URLs
@@ -18345,12 +18847,13 @@ Options:
     --get-ipfs-cid URL        - print CID for URL (after all redirects)
 
 Supported URLs:
-  ftp:// http:// https:// file:/ ipfs://
+  ftp:// http:// https:// file:/ ipfs:// rsync:// [user@]host:/path
 
 Supported backends (set like EGET_BACKEND=curl)
-  wget, curl and partially aria2c, axel
+  wget, curl and partially aria2c, axel, rsync
 
 Also you can set EGET_OPTIONS variable with needed options
+Set EGET_MIRRORS to override default mirrors for --allow-mirrors (default: eterfund mirrors)
 
 Examples:
   $ eget http://ftp.somesite.ru/package-*.x64.tar
@@ -18379,7 +18882,7 @@ local argvalue
 local count="$#"
 while [ -n "$1" ] ; do
     argument="$(echo "$1" | cut -d= -f1)"
-    argvalue="$(echo "$1" | cut -s -d= -f2)"
+    argvalue="$(echo "$1" | cut -s -d= -f2-)"
     case "$argument" in
         -h|--help)
             eget_help
@@ -18390,6 +18893,12 @@ while [ -n "$1" ] ; do
             ;;
         --verbose)
             verbose="$1"
+            ;;
+        --show-progress)
+            WGETSHOWPROGRESS='--show-progress'
+            CURLSHOWPROGRESS='--progress-bar'
+            ARIA2SHOWPROGRESS='--show-console-readout=true'
+            AXELSHOWPROGRESS='1'
             ;;
         -k|--no-check-certificate)
             WGETNOSSLCHECK='--no-check-certificate'
@@ -18406,25 +18915,23 @@ while [ -n "$1" ] ; do
             # TODO: error if header value contains spaces
             if [ -z "$argvalue" ];then
                 shift
-                argvalue="${1/ /}"
+                argvalue="$(printf '%s' "$1" | tr -d ' ')"
             fi
+            [ -z "$argvalue" ] && fatal "Error: --header requires an argument"
             WGETHEADER="--header=$argvalue"
             CURLHEADER="--header $argvalue"
             AXELHEADER="--header=$argvalue"
             ;;
         -P|--output-dir)
-            shift
-            CURLOUTPUTDIR="--create-dirs --output-dir $1"
-            WGETOUTPUTDIR="-P $1"
-            ARIA2OUTPUTDIR="-d $1"
-            AXELOUTPUTDIR="-o $1"
-            USEOUTPUTDIR="$1"
+            if [ -z "$argvalue" ];then
+                shift
+                argvalue="$1"
+            fi
+            [ -z "$argvalue" ] && fatal "Error: --output-dir requires an argument"
+            USEOUTPUTDIR="$argvalue"
             ;;
         -U|-A|--user-agent)
-            user_agent="Mozilla/5.0 (X11; Linux $arch) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36" #"
-            WGETUSERAGENT="-U '$user_agent'"
-            CURLUSERAGENT="-A '$user_agent'"
-            AXELUSERAGENT="--user-agent='$user_agent'"
+            USERAGENT="Mozilla/5.0 (X11; Linux $arch) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36"
             ;;
         --compressed)
             CURLCOMPRESSED='--compressed'
@@ -18466,7 +18973,7 @@ while [ -n "$1" ] ; do
         --second-latest)
             SECONDLATEST="$1"
             ;;
-        --check-mirrors)
+        --allow-mirrors|--check-mirrors)
             CHECKMIRRORS="$1"
             ;;
         -O)
@@ -18483,16 +18990,32 @@ while [ -n "$1" ] ; do
             NOGLOB="--no-glob"
             ;;
         -c|--continue)
-            WGETCONTINUE="$1"
-            CURLCONTINUE="-C -"
-            ARIA2CONTINUE="--continue=true"
-            AXELCONTINUE=""
+            CONTINUE=1
+            # curl: --continue-at and --remote-header-name cannot be combined
+            CURLFILENAMEOPTIONS='--remote-name --remote-time'
+            CURLNAMEOPTIONS='--remote-time'
+            ;;
+        --force|--allow-overwrite)
+            FORCEOVERWRITE=1
+            ;;
+        -N|--timestamping)
+            TIMESTAMPING="1"
+            ;;
+        -i|--input-file)
+            if [ -z "$argvalue" ];then
+                shift
+                argvalue="$1"
+            fi
+            [ -z "$argvalue" ] && fatal "Error: --input-file requires an argument"
+            INPUTFILE="$argvalue"
             ;;
         -T|--timeout)
             if [ -z "$argvalue" ];then
                 shift
                 argvalue="$1"
             fi
+            [ -z "$argvalue" ] && fatal "Error: --timeout requires an argument"
+            ! is_numeric "$argvalue" && fatal "Error: --timeout requires a numeric value, got '$argvalue'"
             WGETTIMEOUT="--timeout $argvalue"
             CURLMAXTIME="--max-time $argvalue"
             AXELTIMEOUT="--timeout=$argvalue"
@@ -18502,6 +19025,8 @@ while [ -n "$1" ] ; do
                 shift
                 argvalue="$1"
             fi
+            [ -z "$argvalue" ] && fatal "Error: --read-timeout requires an argument"
+            ! is_numeric "$argvalue" && fatal "Error: --read-timeout requires a numeric value, got '$argvalue'"
             WGETREADTIMEOUT="--read-timeout $argvalue"
             if [ -z "$CURLMAXTIME" ] ; then
                 CURLMAXTIME="--max-time $argvalue"
@@ -18523,6 +19048,7 @@ while [ -n "$1" ] ; do
                 shift
                 argvalue="$1"
             fi
+            [ -z "$argvalue" ] && fatal "Error: --tries requires an argument"
 
             case "$argvalue" in
                 0|inf)
@@ -18537,9 +19063,13 @@ while [ -n "$1" ] ; do
             esac
             ;;
         --load-cookies)
-            shift;
-            WGETLOADCOOKIES="--load-cookies $1"
-            CURLCOOKIE="--cookie $1"
+            if [ -z "$argvalue" ];then
+                shift
+                argvalue="$1"
+            fi
+            [ -z "$argvalue" ] && fatal "Error: --load-cookies requires an argument"
+            WGETLOADCOOKIES="--load-cookies $argvalue"
+            CURLCOOKIE="--cookie $argvalue"
             ;;
         -*)
             fatal "Unknown option '$1', check eget --help."
@@ -18607,10 +19137,10 @@ check_ipfs_gateway()
         return
     fi
 
-    if docmd eget --check-site "$(dirname $ipfs_gateway)" ; then
+    if docmd eget --check-site "$(dirname "$ipfs_gateway")" ; then
        info "IPFS gateway $ipfs_gateway is accessible, but can't return shared $ipfs_checkQm"
     else
-       info "IPFS gateway $(dirname $ipfs_gateway) is not accessible"
+       info "IPFS gateway $(dirname "$ipfs_gateway") is not accessible"
     fi
 
     return 1
@@ -18772,7 +19302,7 @@ ipfs_cat()
 
 elif [ "$ipfs_mode" = "brave" ] ; then
     IPFS_CMD="$(get_ipfs_brave)" || fatal "Can't find ipfs command in Brave"
-    IPFS_PRETTY_CMD="~Brave-Browser/$(basename $IPFS_CMD)"
+    IPFS_PRETTY_CMD="~Brave-Browser/$(basename "$IPFS_CMD")"
     IPFS_API="$ipfs_api_brave"
     ipfs_api_access || fatal "Can't access to Brave IPFS API (Brave browser is not running and IPFS is not activated?)"
     info "Will use $IPFS_PRETTY_CMD --api $IPFS_API"
@@ -18876,6 +19406,7 @@ WGET="$(print_command_path wget)"
 CURL="$(print_command_path curl)"
 ARIA2="$(print_command_path aria2)"
 AXEL="$(print_command_path axel)"
+RSYNC="$(print_command_path rsync)"
 
 ORIG_EGET_BACKEND="$EGET_BACKEND"
 
@@ -18884,13 +19415,15 @@ if is_fileurl "$1" ; then
     EGET_BACKEND="file"
 elif is_ipfsurl "$1" ; then
     EGET_BACKEND="ipfs"
+elif is_rsyncurl "$1" || is_sshurl "$1" ; then
+    EGET_BACKEND="rsync"
 fi
 
 orig_EGET_BACKEND="$EGET_BACKEND"
 EGET_BACKEND="$(basename "$EGET_BACKEND")"
 
 case "$orig_EGET_BACKEND" in
-    file|ipfs)
+    file|ipfs|rsync)
         ;;
     */wget)
         WGET="$orig_EGET_BACKEND"
@@ -18931,6 +19464,64 @@ case "$orig_EGET_BACKEND" in
 esac
 
 
+# Wrapper for wget command with all configured options
+# Defined globally so it can be used by aria2/axel backends for header operations
+__wget()
+{
+    [ -n "$USERAGENT" ] && set -- -U "$USERAGENT" "$@"
+    [ -n "$USEOUTPUTDIR" ] && set -- -P "$USEOUTPUTDIR" "$@"
+    docmd $WGET $FORCEIPV $WGETQ $WGETSHOWPROGRESS $NOGLOB $WGETCOMPRESSED $WGETHEADER $WGETNOSSLCHECK $WGETNODIRECTORIES $WGETTIMEOUT $WGETREADTIMEOUT $WGETRETRYCONNREFUSED $WGETTRIES $WGETLOADCOOKIES $WGETRUSTSERVERNAMES $EGET_WGET_OPTIONS "$@"
+}
+
+# wget wrapper for downloads (adds -c/-N flags)
+__wget_download()
+{
+    [ -n "$CONTINUE" ] && set -- -c "$@"
+    [ -n "$TIMESTAMPING" ] && set -- -N "$@"
+    __wget "$@"
+}
+
+# Helper function for timestamping with aria2/axel (needs to be outside backend blocks)
+__timestamping_download()
+{
+    local URL="$1"
+    local TARGETFILE="$2"
+    local DOWNLOAD_CMD="$3"  # will be "__aria2 ..." or "__axel ..."
+
+    # If file doesn't exist, just download
+    [ ! -f "$TARGETFILE" ] && eval "$DOWNLOAD_CMD" && return
+
+    # Get Last-Modified header
+    local remote_modified="$(url_get_header "$URL" "Last-Modified")"
+
+    if [ -z "$remote_modified" ] ; then
+        info "Warning: Server did not provide Last-Modified header, downloading anyway"
+        eval "$DOWNLOAD_CMD"
+        return
+    fi
+
+    # Convert HTTP date to unix timestamp
+    local remote_timestamp="$(date -d "$remote_modified" '+%s' 2>/dev/null)"
+    if [ -z "$remote_timestamp" ] ; then
+        info "Warning: Could not parse Last-Modified date '$remote_modified', downloading anyway"
+        eval "$DOWNLOAD_CMD"
+        return
+    fi
+
+    # Get local file timestamp
+    local local_timestamp="$(stat -c '%Y' "$TARGETFILE" 2>/dev/null)"
+    [ -z "$local_timestamp" ] && local_timestamp=0
+
+    # Compare timestamps
+    if [ "$remote_timestamp" -gt "$local_timestamp" ] ; then
+        info "Remote file is newer, downloading..."
+        eval "$DOWNLOAD_CMD" || return 1
+        # Set timestamp from server
+        touch -d "$remote_modified" "$TARGETFILE" 2>/dev/null
+    else
+        info "Local file is up to date, skipping download"
+    fi
+}
 
 if [ "$EGET_BACKEND" = "file" ] ; then
 
@@ -18960,7 +19551,7 @@ url_pget()
     #[ -n "$USEOUTPUTDIR" ] || fatal "USEOUTPUTDIR is not set"
     local URL
     for URL in "$@" ; do
-        cp -av "$(path_from_url "$URL")" $USEOUTPUTDIR
+        cp -av "$(path_from_url "$URL")" "$USEOUTPUTDIR"
     done
 }
 
@@ -19023,7 +19614,7 @@ url_pget()
     for URL in "$@" ; do
         local fn="$(url_print_filename_from_url "$URL")"
         if [ -z "$fn" ] ; then
-           fn="$(basename $URL)"
+           fn="$(basename "$URL")"
         fi
         ipfs_get "$(cid_from_url "$URL")" "$USEOUTPUTDIR/$fn"
     done
@@ -19069,14 +19660,6 @@ url_get_real_url()
 
 
 elif [ "$EGET_BACKEND" = "wget" ] ; then
-__wget()
-{
-    if [ -n "$WGETUSERAGENT" ] ; then
-        docmd $WGET $FORCEIPV $WGETQ $NOGLOB $WGETCOMPRESSED $WGETHEADER $WGETOUTPUTDIR $WGETNOSSLCHECK $WGETNODIRECTORIES $WGETCONTINUE $WGETTIMEOUT $WGETREADTIMEOUT $WGETRETRYCONNREFUSED $WGETTRIES $WGETLOADCOOKIES $WGETRUSTSERVERNAMES "$(eval echo "$WGETUSERAGENT")" $EGET_WGET_OPTIONS "$@"
-    else
-        docmd $WGET $FORCEIPV $WGETQ $NOGLOB $WGETCOMPRESSED $WGETHEADER $WGETOUTPUTDIR $WGETNOSSLCHECK $WGETNODIRECTORIES $WGETCONTINUE $WGETTIMEOUT $WGETREADTIMEOUT $WGETRETRYCONNREFUSED $WGETTRIES $WGETLOADCOOKIES $WGETRUSTSERVERNAMES $EGET_WGET_OPTIONS "$@"
-    fi
-}
 
 # put remote content to stdout
 url_scat()
@@ -19097,20 +19680,30 @@ url_sget()
        scat "$URL"
        return
     elif [ -n "$2" ] ; then
-       download_with_mirroring __wget "$URL" -O "$2"
+       download_with_mirroring __wget_download "$URL" -O "$2"
        return
     fi
 # TODO: поддержка rsync для известных хостов?
 # Не качать, если одинаковый размер и дата
 # -nc
 # TODO: overwrite always
-    download_with_mirroring __wget "$URL" $WGETNAMEOPTIONS
+    download_with_mirroring __wget_download "$URL" $WGETNAMEOPTIONS
 }
 
 url_pget()
 {
     #[ -n "$USEOUTPUTDIR" ] || fatal "USEOUTPUTDIR is not set"
-    download_with_mirroring __wget $WGETNAMEOPTIONS "$@"
+    download_with_mirroring __wget_download $WGETNAMEOPTIONS "$@"
+}
+
+# Download file with mirror fallback (try each URL until success)
+sget_with_mirrors()
+{
+    local URL
+    for URL in "$@" ; do
+        __wget_download $WGETNAMEOPTIONS "$URL" && return 0
+    done
+    return 1
 }
 
 url_get_response()
@@ -19132,11 +19725,16 @@ elif [ "$EGET_BACKEND" = "curl" ] ; then
 
 __curl()
 {
-    if [ -n "$CURLUSERAGENT" ] ; then
-        docmd $CURL $FORCEIPV --fail -L $CURLQ $CURLCOMPRESSED $CURLHEADER $CURLOUTPUTDIR $CURLNOSSLCHECK $CURLCONTINUE $CURLMAXTIME $CURLRETRYCONNREFUSED $CURLRETRY $CURLCOOKIE $CURLTRUSTSERVERNAMES "$(eval echo "$CURLUSERAGENT")" $EGET_CURL_OPTIONS "$@"
-    else
-        docmd $CURL $FORCEIPV --fail -L $CURLQ $CURLCOMPRESSED $CURLHEADER $CURLOUTPUTDIR $CURLNOSSLCHECK $CURLCONTINUE $CURLMAXTIME $CURLRETRYCONNREFUSED $CURLRETRY $CURLCOOKIE $CURLTRUSTSERVERNAMES $EGET_CURL_OPTIONS "$@"
-    fi
+    [ -n "$USERAGENT" ] && set -- -A "$USERAGENT" "$@"
+    [ -n "$USEOUTPUTDIR" ] && set -- --create-dirs --output-dir "$USEOUTPUTDIR" "$@"
+    docmd $CURL $FORCEIPV --fail -L $CURLQ $CURLSHOWPROGRESS $CURLCOMPRESSED $CURLHEADER $CURLNOSSLCHECK $CURLMAXTIME $CURLRETRYCONNREFUSED $CURLRETRY $CURLCOOKIE $CURLTRUSTSERVERNAMES $EGET_CURL_OPTIONS "$@"
+}
+
+# curl wrapper for downloads (adds -C - for continue)
+__curl_download()
+{
+    [ -n "$CONTINUE" ] && set -- -C - "$@"
+    __curl "$@"
 }
 # put remote content to stdout
 url_scat()
@@ -19149,6 +19747,18 @@ url_scat()
     download_with_mirroring __curl "$URL" --output -
 }
 
+# Helper to check Last-Modified for curl timestamping
+__curl_check_timestamp()
+{
+	local URL="$1"
+	[ -n "$quiet" ] && return 0  # Skip check in quiet mode
+
+	local last_modified="$(url_get_header "$URL" "Last-Modified")"
+	if [ -z "$last_modified" ] ; then
+		info "Warning: Server did not provide Last-Modified header, time-stamps turned off"
+	fi
+}
+
 # download to default name of to $2
 url_sget()
 {
@@ -19158,32 +19768,67 @@ url_sget()
        scat "$1"
        return
     elif [ -n "$2" ] ; then
-       download_with_mirroring __curl "$URL" --output "$2"
+       if [ -n "$TIMESTAMPING" ] && [ -f "$2" ] ; then
+           __curl_check_timestamp "$URL"
+           download_with_mirroring __curl_download "$URL" -z "$2" --output "$2"
+       else
+           download_with_mirroring __curl_download "$URL" --output "$2"
+       fi
        return
     fi
 
-    local FILENAME=$(url_get_filename "$URL")
+    local FILENAME="$(url_get_filename "$URL")"
     if [ -n "$FILENAME" ] ; then
-        download_with_mirroring __curl "$URL" $CURLNAMEOPTIONS --output "$FILENAME"
+        if [ -n "$TIMESTAMPING" ] && [ -f "$FILENAME" ] ; then
+            __curl_check_timestamp "$URL"
+            download_with_mirroring __curl_download "$URL" -z "$FILENAME" $CURLNAMEOPTIONS --output "$FILENAME"
+        else
+            download_with_mirroring __curl_download "$URL" $CURLNAMEOPTIONS --output "$FILENAME"
+        fi
         return
     fi
-    
-    download_with_mirroring __curl "$URL" $CURLFILENAMEOPTIONS
+
+    if [ -n "$TIMESTAMPING" ] ; then
+        # Need to get filename first to use -z
+        FILENAME="$(basename "$URL")"
+        if [ -f "$FILENAME" ] ; then
+            __curl_check_timestamp "$URL"
+            download_with_mirroring __curl_download "$URL" -z "$FILENAME" $CURLFILENAMEOPTIONS
+        else
+            download_with_mirroring __curl_download "$URL" $CURLFILENAMEOPTIONS
+        fi
+    else
+        download_with_mirroring __curl_download "$URL" $CURLFILENAMEOPTIONS
+    fi
 }
 
 url_pget()
 {
     #[ -n "$USEOUTPUTDIR" ] || fatal "USEOUTPUTDIR is not set"
+    # curl needs -O before each URL for parallel downloads
+    local args=""
     local URL
     for URL in "$@" ; do
-        download_with_mirroring __curl $CURLFILENAMEOPTIONS "$URL"
+        args="$args $CURLFILENAMEOPTIONS $URL"
     done
+    __curl_download --parallel $args
+}
+
+# Download file with mirror fallback (try each URL until success)
+sget_with_mirrors()
+{
+    local URL
+    for URL in "$@" ; do
+        __curl_download $CURLFILENAMEOPTIONS "$URL" && return 0
+    done
+    return 1
 }
 
 url_get_response()
 {
     local URL="$1"
     local answer
+    # Don't use -C - for header requests
     answer="$(quiet=1 __curl --max-time 20 --retry 0 -LI "$URL" 2>&1)"
     # HTTP/1.1 405 Method Not Allowed
     # HTTP/1.1 404 Not Found
@@ -19197,18 +19842,27 @@ url_get_response()
 elif [ "$EGET_BACKEND" = "aria2" ] ; then
 __aria2()
 {
-    docmd $ARIA2 $ARIA2Q $ARIA2OUTPUTDIR $ARIA2CONTINUE $EGET_ARIA2_OPTIONS "$@"
+    [ -n "$USEOUTPUTDIR" ] && set -- -d "$USEOUTPUTDIR" "$@"
+    docmd $ARIA2 $ARIA2Q $ARIA2SHOWPROGRESS $EGET_ARIA2_OPTIONS "$@"
+}
+
+# aria2 wrapper for downloads (adds --continue)
+__aria2_download()
+{
+    [ -n "$CONTINUE" ] && set -- --continue=true "$@"
+    __aria2 "$@"
 }
 
 # put remote content to stdout
 url_scat()
 {
+    # aria2 -o - creates file named "-", not stdout output, fallback to wget
     local URL="$1"
-    download_with_mirroring __aria2 -x1 -s1 --allow-piece-length-change=false -o - "$URL" && return
+    download_with_mirroring __wget "$URL" -O- && return
     local RES=$?
     [ -n "$quiet" ] || return $RES
     unset_quiet
-    download_with_mirroring __aria2 -x1 -s1 --allow-piece-length-change=false -o - "$URL"
+    download_with_mirroring __wget "$URL" -O-
 }
 
 # download to default name of to $2
@@ -19219,21 +19873,40 @@ url_sget()
        scat "$URL"
        return
     elif [ -n "$2" ] ; then
-       download_with_mirroring __aria2 -x1 -s1 --allow-piece-length-change=false -o "$2" "$URL"
+       if [ -n "$TIMESTAMPING" ] ; then
+           __timestamping_download "$URL" "$2" "download_with_mirroring __aria2_download -x1 -s1 --allow-piece-length-change=false --allow-overwrite=true -o \"$2\" \"$URL\""
+       else
+           download_with_mirroring __aria2_download -x1 -s1 --allow-piece-length-change=false --allow-overwrite=true -o "$2" "$URL"
+       fi
        return
     fi
-# TODO: overwrite always
-    download_with_mirroring __aria2 "$URL"
+
+    # No explicit output file
+    if [ -n "$TIMESTAMPING" ] ; then
+        # Get filename first for timestamping
+        local FILENAME="$(url_get_filename "$URL")"
+        [ -z "$FILENAME" ] && FILENAME="$(basename "$URL")"
+        __timestamping_download "$URL" "$FILENAME" "download_with_mirroring __aria2_download --allow-overwrite=true \"$URL\""
+    else
+        download_with_mirroring __aria2_download --allow-overwrite=true "$URL"
+    fi
 }
 
 url_pget()
 {
     #[ -n "$USEOUTPUTDIR" ] || fatal "USEOUTPUTDIR is not set"
-    echo "$@" | xargs -n1 | download_with_mirroring __aria2 -i-
+    echo "$@" | xargs -n1 | download_with_mirroring __aria2_download --allow-overwrite=true -i-
 }
 
+# Download file from multiple mirrors simultaneously (TAB-separated for aria2)
+sget_with_mirrors()
+{
+    # aria2 supports multiple URLs for same file separated by TAB
+    local tab_urls="$(echo "$@" | tr ' ' '\t')"
+    echo "$tab_urls" | __aria2_download -i-
+}
 
-# left wget here
+# use __wget for headers (aria2/axel don't support this natively)
 url_get_response()
 {
     local URL="$1"
@@ -19251,24 +19924,38 @@ url_get_response()
 elif [ "$EGET_BACKEND" = "axel" ] ; then
 __axel()
 {
-    if [ -n "$AXELUSERAGENT" ] ; then
-        docmd $AXEL $FORCEIPV $AXELQ $AXELOUTPUTDIR $AXELCONTINUE $AXELTIMEOUT $AXELHEADER $AXELNOSSLCHECK $AXELUSERAGENT "$(eval echo "$AXELUSERAGENT")" $EGET_AXEL_OPTIONS "$@"
-    else
-        docmd $AXEL $FORCEIPV $AXELQ $AXELOUTPUTDIR $AXELCONTINUE $AXELTIMEOUT $AXELHEADER $AXELNOSSLCHECK $AXELUSERAGENT $EGET_AXEL_OPTIONS "$@"
-    fi
+    local AXELQ_LOCAL="$AXELQ"
+    # --show-progress overrides --quiet for axel
+    [ -n "$AXELSHOWPROGRESS" ] && AXELQ_LOCAL=''
+    [ -n "$USERAGENT" ] && set -- --user-agent="$USERAGENT" "$@"
+    # Note: axel doesn't support output directory, only output file (-o)
+    docmd $AXEL $FORCEIPV $AXELQ_LOCAL $AXELTIMEOUT $AXELHEADER $AXELNOSSLCHECK $EGET_AXEL_OPTIONS "$@"
+}
+
+# axel wrapper for downloads
+# Note: axel auto-continues if state file (.st) exists, no explicit flag needed
+__axel_download()
+{
+    __axel "$@"
+}
+
+# Remove target file and state file before download (axel can't overwrite)
+__axel_clean()
+{
+    local target="$1"
+    rm -f "$target" "$target.st" 2>/dev/null
 }
 
 # put remote content to stdout
 url_scat()
 {
-    # TODO
-    fatal "Improve me (via temp. file?)"
+    # axel doesn't support stdout output, fallback to wget
     local URL="$1"
-    download_with_mirroring __axel -o - "$URL" && return
+    download_with_mirroring __wget "$URL" -O- && return
     local RES=$?
     [ -n "$quiet" ] || return $RES
     unset_quiet
-    download_with_mirroring __axel -o - "$URL"
+    download_with_mirroring __wget "$URL" -O-
 }
 
 # download to default name of to $2
@@ -19279,24 +19966,57 @@ url_sget()
        scat "$URL"
        return
     elif [ -n "$2" ] ; then
-       download_with_mirroring __axel --alternate -o "$2" "$URL"
+       if [ -n "$TIMESTAMPING" ] ; then
+           __timestamping_download "$URL" "$2" "download_with_mirroring __axel_download --alternate -o \"$2\" \"$URL\""
+       else
+           # axel can't overwrite, clean first
+           __axel_clean "$2"
+           download_with_mirroring __axel_download --alternate -o "$2" "$URL"
+       fi
        return
     fi
-    download_with_mirroring __axel --alternate "$URL"
+
+    # No explicit output file - get filename from URL
+    local FILENAME="$(url_get_filename "$URL")"
+    [ -z "$FILENAME" ] && FILENAME="$(basename "$URL")"
+    if [ -n "$TIMESTAMPING" ] ; then
+        __timestamping_download "$URL" "$FILENAME" "download_with_mirroring __axel_download --alternate \"$URL\""
+    else
+        # axel can't overwrite, clean first
+        __axel_clean "$FILENAME"
+        download_with_mirroring __axel_download --alternate "$URL"
+    fi
 }
 
 url_pget()
 {
     #[ -n "$USEOUTPUTDIR" ] || fatal "USEOUTPUTDIR is not set"
-    # download_with_mirroring __axel "$@"
-    local URL
+    # axel doesn't support output directory, use cd workaround
+    local URL FILENAME
+    local oldpwd="$PWD"
+    cd "$USEOUTPUTDIR" || return 1
     for URL in "$@" ; do
-        download_with_mirroring __axel --alternate "$URL"
+        # axel can't overwrite, clean first
+        FILENAME="$(basename "$URL")"
+        __axel_clean "$FILENAME"
+        download_with_mirroring __axel_download --alternate "$URL"
     done
+    cd "$oldpwd"
 }
 
+# Download file from multiple mirrors simultaneously (axel supports multiple URLs)
+sget_with_mirrors()
+{
+    # axel doesn't support output directory, use cd workaround
+    local oldpwd="$PWD"
+    [ -n "$USEOUTPUTDIR" ] && { cd "$USEOUTPUTDIR" || return 1; }
+    # axel can't overwrite, clean first (all URLs point to same file)
+    __axel_clean "$(basename "$1")"
+    __axel_download --alternate "$@"
+    [ -n "$USEOUTPUTDIR" ] && cd "$oldpwd"
+}
 
-# left wget here
+# use __wget for headers (aria2/axel don't support this natively)
 url_get_response()
 {
     local URL="$1"
@@ -19309,6 +20029,70 @@ url_get_response()
         return
     fi
     echo "$answer"
+}
+
+elif [ "$EGET_BACKEND" = "rsync" ] ; then
+
+__rsync()
+{
+    local opts=""
+    [ -n "$quiet" ] && opts="$opts -q"
+    [ -n "$verbose" ] && opts="$opts -v"
+    [ -n "$TIMESTAMPING" ] && opts="$opts -u"
+    docmd $RSYNC $opts $EGET_RSYNC_OPTIONS "$@"
+}
+
+# put remote content to stdout
+url_scat()
+{
+    local URL="$1"
+    # rsync can't output to stdout, use temp file
+    local tmpfile="$(mktemp)"
+    __rsync "$URL" "$tmpfile" && cat "$tmpfile"
+    local res=$?
+    rm -f "$tmpfile"
+    return $res
+}
+
+# download to default name or to $2
+url_sget()
+{
+    local URL="$1"
+    if [ "$2" = "/dev/stdout" ] || [ "$2" = "-" ] ; then
+        scat "$URL"
+        return
+    elif [ -n "$2" ] ; then
+        __rsync "$URL" "$2"
+        return
+    fi
+    # Download to current directory with original name
+    __rsync "$URL" .
+}
+
+url_pget()
+{
+    local URL
+    local destdir="${USEOUTPUTDIR:-.}"
+    for URL in "$@" ; do
+        __rsync "$URL" "$destdir/"
+    done
+}
+
+# rsync doesn't support HTTP headers
+url_get_response()
+{
+    warning "rsync:// does not support HTTP headers"
+    return 1
+}
+
+url_get_filename()
+{
+    basename "$1"
+}
+
+url_get_real_url()
+{
+    echo "$1"
 }
 
 else
@@ -19328,13 +20112,13 @@ url_get_headers()
 url_check_accessible()
 {
     local URL="$1"
-    url_get_response "$URL" | grep "HTTP/" | tail -n1 | grep -q -w "200\|404"
+    url_get_response "$URL" | grep "HTTP/[0-9]\.[0-9] [0-9]" | tail -n1 | grep -q -w "200\|404"
 }
 
 url_check_available()
 {
     local URL="$1"
-    url_get_response "$URL" | grep "HTTP/" | tail -n1 | grep -q -w "200"
+    url_get_response "$URL" | grep "HTTP/[0-9]\.[0-9] [0-9]" | tail -n1 | grep -q -w "200"
 }
 
 url_get_header()
@@ -19419,12 +20203,17 @@ url_get_filename()
         loc=""
     fi
 
-    local loc="$URL"
+    # If real URL resolution failed, fallback to original URL
+    [ -n "$loc" ] || loc="$URL"
+
     if is_strange_url "$loc" ; then
         loc="$(echo "$loc" | sed -e "s|\?.*||")"
     fi
 
-    [ -n "$loc" ] && basename "$loc"
+    [ -n "$loc" ] || return
+    filename="$(basename "$loc")"
+    [ "$filename" = "redirect" ] && return 1
+    echo "$filename"
 }
 
 fi
@@ -19496,6 +20285,21 @@ sget()
        return
     fi
 
+    # Check if target file exists (unless --force, -c, or -N is used)
+    if [ -n "$TARGET" ] && [ -f "$TARGET" ] ; then
+        if [ -n "$TIMESTAMPING" ] ; then
+            # -N: handled by backend timestamping logic
+            :
+        elif [ -n "$CONTINUE" ] ; then
+            # -c: pass to backend for resume
+            :
+        elif [ -n "$FORCEOVERWRITE" ] ; then
+            # --force: will overwrite
+            :
+        else
+            fatal "File '$TARGET' already exists. Use --force to overwrite, -c to continue, or -N for timestamping."
+        fi
+    fi
 
     #if is_strange_url "$REALURL" ; then
     #    info "Just download strange URL $REALURL, skipping IPFS"
@@ -19527,6 +20331,12 @@ sget()
             if [ -z "$TARGET" ] ; then
                 TARGET="$CID"
             fi
+            # Check if target file exists (TARGET was just determined from CID)
+            if [ -f "$TARGET" ] ; then
+                if [ -z "$TIMESTAMPING" ] && [ -z "$CONTINUE" ] && [ -z "$FORCEOVERWRITE" ] ; then
+                    fatal "File '$TARGET' already exists. Use --force to overwrite, -c to continue, or -N for timestamping."
+                fi
+            fi
         fi
         [ "$URL" = "$REALURL" ] && info "$URL -> $CID -> $TARGET" || info "$URL -> $REALURL -> $CID -> $TARGET"
         ipfs_get "$CID" "$TARGET" && return
@@ -19541,6 +20351,12 @@ sget()
     local FN="$(url_get_filename "$REALURL")" || return
     if [ -z "$TARGET" ] ; then
         TARGET="$FN"
+        # Check if target file exists (TARGET was just determined from URL)
+        if [ -f "$TARGET" ] ; then
+            if [ -z "$TIMESTAMPING" ] && [ -z "$CONTINUE" ] && [ -z "$FORCEOVERWRITE" ] ; then
+                fatal "File '$TARGET' already exists. Use --force to overwrite, -c to continue, or -N for timestamping."
+            fi
+        fi
     fi
 
     if [ -n "$GETIPFSCID" ] ; then
@@ -19602,17 +20418,71 @@ scat()
 
 sget()
 {
+    local URL="$1"
+    local TARGET="$2"
+
     if [ -n "$GETFILENAME" ] ; then
-        get_filename "$1"
+        get_filename "$URL"
         return
     fi
 
     if [ -n "$GETREALURL" ] ; then
-        get_real_url "$1"
+        get_real_url "$URL"
         return
     fi
 
+    # Skip check for stdout
+    if [ "$TARGET" = "/dev/stdout" ] || [ "$TARGET" = "-" ] ; then
+        url_sget "$@"
+        return
+    fi
+
+    # Check if target file exists (unless --force, -c, or -N is used)
+    # When TARGET is not specified, determine it from URL
+    local TARGET_FROM_URL=""
+    if [ -z "$TARGET" ] ; then
+        TARGET_FROM_URL="$(url_get_filename "$URL")"
+        TARGET="$TARGET_FROM_URL"
+    fi
+    if [ -n "$TARGET" ] && [ -f "$TARGET" ] ; then
+        if [ -z "$TIMESTAMPING" ] && [ -z "$CONTINUE" ] && [ -z "$FORCEOVERWRITE" ] ; then
+            fatal "File '$TARGET' already exists. Use --force to overwrite, -c to continue, or -N for timestamping."
+        fi
+        # With --force and no explicit -O, delete file so wget won't create .1
+        if [ -n "$FORCEOVERWRITE" ] && [ -n "$TARGET_FROM_URL" ] ; then
+            rm -f "$TARGET"
+        fi
+    fi
+
     url_sget "$@"
+}
+
+# Read URLs from file, skip empty lines and comments
+read_urls_from_file()
+{
+	local file="$1"
+	local line
+
+	if [ "$file" = "-" ] ; then
+		# Read from stdin
+		while IFS= read -r line ; do
+			line="$(echo "$line" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+			[ -z "$line" ] && continue
+			echo "$line" | grep -q '^[[:space:]]*#' && continue
+			echo "$line"
+		done
+	else
+		# Read from file
+		[ ! -f "$file" ] && fatal "Error: input file '$file' not found"
+		[ ! -r "$file" ] && fatal "Error: input file '$file' is not readable"
+
+		while IFS= read -r line ; do
+			line="$(echo "$line" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+			[ -z "$line" ] && continue
+			echo "$line" | grep -q '^[[:space:]]*#' && continue
+			echo "$line"
+		done < "$file"
+	fi
 }
 
 pget()
@@ -19678,11 +20548,14 @@ make_fileurl()
     local url="$1"
     local fn="$2"
 
-    fn="$(echo "$fn" | sed -e 's|^./||' -e 's|^/+||')"
+    fn="$(echo "$fn" | sed -e 's|^./||' -e 's|^/*||')"
 
     if is_fileurl "$url" ; then
         # if it is url
         :
+    elif is_rsyncurl "$url" || is_sshurl "$url" ; then
+        # rsync/ssh URLs: just ensure trailing slash
+        url="$(echo "$url" | sed 's|/*$|/|')"
     elif is_abs_path "$fn" ; then
         # if there is file path from the root of the site
         url="$(get_host_only "$url")"
@@ -19701,18 +20574,28 @@ get_urls()
         return
     fi
 
-    # Hack: Converted markdown support
-    # https://github.com/dotnet/core/blob/main/release-notes/9.0/preview/rc1/9.0.0-rc.1.md
-    if false && echo "$URL" | grep -q "\.md$" ; then
-        scat "$URL" | sed -e 's|<|<\n|g' | grep "https*" | sed -e 's|.*\(https*://\)|\1|' -e 's|".*||g'
+    # rsync directory listing
+    if is_rsyncurl "$URL" || is_sshurl "$URL" ; then
+        $RSYNC --list-only "$URL" 2>/dev/null | awk '{print $NF}'
         return
     fi
 
-    # cat html, divide to lines by tags and cut off hrefs only
-    scat "$URL" | sed -e 's|<|<\n|g' -e 's|data-file=|href=|g' -e "s|href=http|href=\"http|g" -e "s|>|\">|g" -e "s|'|\"|g" | \
-         grep -i -o -E 'href="(.+)"' | sed -e 's|&amp;|\&|' | cut -d'"' -f2 | sed -e 's|^ *||g' -e 's| *$||g'
+    local content
+    content="$(scat "$URL")"
+
+    # Detect format: HTML (contains <) or ls -l (FTP directory listing from curl)
+    if echo "$content" | grep -q '<' ; then
+        # HTML format (wget FTP, HTTP): parse href attributes
+        echo "$content" | sed -e 's|<|<\n|g' -e 's|data-file=|href=|g' -e "s|href=http|href=\"http|g" -e "s|>|\">|g" -e "s|'|\"|g" | \
+             grep -i -o -E 'href="(.+)"' | sed -e 's|&amp;|\&|' | cut -d'"' -f2 | sed -e 's|^ *||g' -e 's| *$||g'
+    else
+        # ls -l format (curl FTP): extract last field (filename)
+        echo "$content" | awk '{print $NF}'
+    fi
 }
 
+# Check that URL is provided (unless using -i|--input-file)
+[ -z "$INPUTFILE" ] && [ -z "$1" ] && fatal "Error: URL is required"
 
 if [ -n "$CHECKURL" ] ; then
     #set_quiet
@@ -19774,7 +20657,7 @@ if [ -n "$2" ] ; then
     MASK="$2"
     SEPMASK="$2"
 else
-    if [ -n "$NOGLOB" ] || have_end_slash_or_php_parametr "$1" ; then
+    if [ -n "$NOGLOB" ] || have_end_slash_or_php_parametr "$1" || is_rsyncurl "$1" || is_sshurl "$1" ; then
         URL="$1"
         MASK=""
     else
@@ -19786,6 +20669,24 @@ else
 
 fi
 
+# Process input file if specified
+if [ -n "$INPUTFILE" ] ; then
+	# Set output dir to current dir if not specified
+	[ -z "$USEOUTPUTDIR" ] && USEOUTPUTDIR="."
+
+	# Read URLs from file
+	URLS="$(read_urls_from_file "$INPUTFILE")"
+	[ -z "$URLS" ] && fatal "Error: no valid URLs found in input file"
+
+	# Process each line separately (each line = one file, possibly with mirrors)
+	echo "$URLS" | while IFS= read -r line ; do
+		[ -z "$line" ] && continue
+		# Each line may contain multiple URLs (mirrors) separated by spaces
+		sget_with_mirrors $line
+	done
+	exit
+fi
+
 # https://www.freeoffice.com/download.php?filename=freeoffice-2021-1062.x86_64.rpm
 if [ -z "$NOGLOB" ] && echo "$URL" | grep -q -P "[*\[\]]" ; then
     fatal "Error: there are globbing symbol (*[]) in $URL. It is allowed only for mask part"
@@ -19793,22 +20694,19 @@ fi
 
 if is_url "$MASK" ; then
     #[ -z "$USEOUTPUTDIR" ] && fatal "eget supports only one URL as argument by default, use --output-dir to download in parallel"
-    USEOUTPUTDIR="."
-    CURLOUTPUTDIR="--create-dirs --output-dir $USEOUTPUTDIR"
+    [ -z "$USEOUTPUTDIR" ] && USEOUTPUTDIR="."
+fi
+
+# if more than one file or if --output-dir is used
+if [ -n "$USEOUTPUTDIR" ] ; then
+    if [ -n "$TIMESTAMPING" ] ; then
+        fatal "Error: --timestamping is not supported with --output-dir (parallel downloads)"
+    fi
     pget "$@"
     return
 else
     [ -n "$3" ] && fatal "too many args: extra '$3'. May be you need use quotes for arg with wildcards."
 fi
-
-# TODO: curl?
-# If ftp protocol, just download
-if echo "$URL" | grep -q "^ftp://" ; then
-    [ -n "$LISTONLY" ] && fatal "TODO: list files for ftp:// is not supported yet"
-    sget "$1" "$TARGETFILE"
-    return
-fi
-
 
 if [ -n "$LISTONLY" ] ; then
     for fn in $(get_urls | filter_glob "$MASK" | filter_order) ; do
@@ -19920,6 +20818,19 @@ create_archive()
 	esac
 }
 
+# Extract squashfs-based archives (AppImage, squashfs, snap)
+extract_squashfs_image()
+{
+	local arc="$1"
+	local subdir="$2"
+	if is_command unsquashfs ; then
+		docmd unsquashfs -d "$subdir" "$arc"
+	else
+		mkdir -p "$subdir" && cd "$subdir" || fatal
+		docmd $HAVE_7Z x "$arc"
+	fi
+}
+
 extract_archive()
 {
 	local arc="$1"
@@ -19946,16 +20857,17 @@ extract_archive()
 	fi
 
 	if [ "$type" = "AppImage" ] || [ "$type" = "appimage" ] ; then
-		docmd chmod u+x "$rarc" || fatal "Can't set executable permission"
-		docmd "$rarc" --appimage-extract
-		mv squashfs-root "$(basename "$(basename "$arc" .AppImage)" .appimage)"
+		extract_squashfs_image "$rarc" "$(basename "$(basename "$arc" .AppImage)" .appimage)"
 		exit
 	fi
 
 	if [ "$type" = "squashfs" ] ; then
-		local subdir="$(basename "$arc" .squashfs)"
-		mkdir -p "$subdir" && cd "$subdir" || fatal
-		docmd $HAVE_7Z x "$rarc"
+		extract_squashfs_image "$rarc" "$(basename "$arc" .squashfs)"
+		exit
+	fi
+
+	if [ "$type" = "snap" ] ; then
+		extract_squashfs_image "$rarc" "$(basename "$arc" .snap)"
 		exit
 	fi
 
@@ -20493,21 +21405,33 @@ fatal()
         exit 1
 }
 
-filter_strip_spaces()
+strip()
 {
-        # possible use just
-        #xargs echo
-        sed -e "s| \+| |g" -e "s|^ ||" -e "s| \$||"
+        set -f
+        set -- $@
+        echo "$*"
+        set +f
 }
 
+# legacy
 strip_spaces()
 {
-        echo "$*" | filter_strip_spaces
+        strip "$@"
+}
+
+# deprecated: use 'strip' instead
+# legacy, line-by-line processing
+filter_strip_spaces()
+{
+        local line
+        while read -r line ; do
+                strip "$line"
+        done
 }
 
 is_empty()
 {
-        [ "$(strip_spaces "$*")" = "" ]
+        [ "$(strip "$*")" = "" ]
 }
 
 isempty()
@@ -20517,12 +21441,21 @@ isempty()
 
 first()
 {
-        echo "$*" | cut -f1 -d" "
+        set -f
+        set -- $@
+        echo "$1"
+        set +f
 }
 
 last()
 {
-        echo "$*" | xargs -n1 echo 2>/dev/null | tail -n1
+        local i last
+        set -f
+        for i in $@ ; do
+                last="$i"
+        done
+        set +f
+        echo "$last"
 }
 
 firstupper()
@@ -20541,9 +21474,12 @@ tolower()
 
 has_space()
 {
-        # not for dash:
-        # [ "$1" != "${1/ //}" ]
-        [ "$(echo "$*" | sed -e "s| ||")" != "$*" ]
+        local res
+        set -f
+        set -- $@
+        [ $# -gt 1 ]; res=$?
+        set +f
+        return $res
 }
 
 list()
@@ -20559,14 +21495,15 @@ list()
 count()
 {
         set -f
-        list $@ | wc -l
+        set -- $@
+        echo $#
         set +f
 }
 
 union()
 {
         set -f
-        strip_spaces $(list $@ | sort -u)
+        strip $(list $@ | sort -u)
         set +f
 }
 
@@ -20574,12 +21511,14 @@ intersection()
 {
         local RES=""
         local i j
+        set -f
         for i in $2 ; do
             for j in $1 ; do
                 [ "$i" = "$j" ] && RES="$RES $i"
             done
         done
-        strip_spaces "$RES"
+        set +f
+        strip "$RES"
 }
 
 uniq()
@@ -20613,7 +21552,7 @@ reg_remove()
                 echo "$i" | grep -q "^$1$" || RES="$RES $i"
         done
         set +f
-        strip_spaces "$RES"
+        strip "$RES"
 }
 
 # remove_from_list "1." "11 12 21 22" -> "21 22"
@@ -20626,17 +21565,19 @@ reg_wordremove()
                 echo "$i" | grep -q -w "$1" || RES="$RES $i"
         done
         set +f
-        strip_spaces "$RES"
+        strip "$RES"
 }
 
 reg_rqremove()
 {
         local i
         local RES=""
+        set -f
         for i in $2 ; do
                 [ "$i" = "$1" ] || RES="$RES $i"
         done
-        strip_spaces "$RES"
+        set +f
+        strip "$RES"
 }
 
 # Args: LIST1 LIST2
@@ -20651,43 +21592,34 @@ exclude()
                 RES="$(reg_rqremove "$i" "$RES")"
         done
         set +f
-        strip_spaces "$RES"
+        strip "$RES"
 }
 
 # regexclude_list "22 1." "11 12 21 22" -> "21"
 reg_exclude()
 {
-        local i
-        local RES="$2"
         set -f
-        for i in $1 ; do
-                RES="$(reg_remove "$i" "$RES")"
-        done
+        # Each pattern as separate line with ^...$ anchors (BRE, not ERE)
+        strip "$(list $2 | grep -vf <(list $1 | sed 's/.*/^&$/') | tr '\n' ' ')"
         set +f
-        strip_spaces "$RES"
 }
 
 # regexclude_list "22 1." "11 12 21 22" -> "21"
 reg_wordexclude()
 {
-        local i
-        local RES="$2"
         set -f
-        for i in $1 ; do
-                RES=$(reg_wordremove "$i" "$RES")
-        done
+        # Each pattern as separate line for grep -f (BRE, not ERE)
+        strip "$(list $2 | grep -vwf <(list $1) | tr '\n' ' ')"
         set +f
-        strip_spaces "$RES"
 }
 
+# internal function
 if_contain()
 {
         local i
-        set -f
         for i in $2 ; do
             [ "$i" = "$1" ] && return
         done
-        set +f
         return 1
 }
 
@@ -20703,29 +21635,41 @@ difference()
             if_contain $i "$1" || RES="$RES $i"
         done
         set +f
-        strip_spaces "$RES"
+        strip "$RES"
 }
 
 
-# FIXME:
 # reg_include "1." "11 12 21 22" -> "11 12"
 reg_include()
 {
-        local i
-        local RES=""
         set -f
-        for i in $2 ; do
-                echo "$i" | grep -q -w "$1" && RES="$RES $i"
-        done
+        # Each pattern as separate line with ^...$ anchors (BRE, not ERE)
+        strip "$(list $2 | grep -f <(list $1 | sed 's/.*/^&$/') | tr '\n' ' ')"
         set +f
-        strip_spaces "$RES"
+}
+
+# reg_wordinclude "1." "11 12 21 22" -> "11 12"
+reg_wordinclude()
+{
+        set -f
+        # Each pattern as separate line for grep -f (BRE, not ERE)
+        strip "$(list $2 | grep -wf <(list $1) | tr '\n' ' ')"
+        set +f
 }
 
 contains()
 {
-    #estrlist has "$1" "$2"
-    local res="$(reg_wordexclude "$1" "$2")"
-    [ "$res" != "$2" ]
+    local word item found
+    set -f
+    for word in $1 ; do
+        found=0
+        for item in $2 ; do
+            [ "$item" = "$word" ] && found=1 && break
+        done
+        [ "$found" = 0 ] && set +f && return 1
+    done
+    set +f
+    return 0
 }
 
 example()
@@ -20747,18 +21691,18 @@ help()
         echo "estrlist developed for string list operations. See also cut, join, paste..."
         echo "Usage: $0 <command> [args]"
         echo "Commands:"
-        echo "  strip_spaces [args]               - remove extra spaces"
-# TODO: add filter
-#        echo "  filter_strip_spaces               - remove extra spaces from words from standart input"
+        echo "  strip [args]                      - remove extra spaces"
 #        echo "  reg_remove  <PATTERN> [word list] - remove words containing a match to the given PATTERN (grep notation)"
 #        echo "  reg_wordremove  <PATTERN> [word list] - remove words containing a match to the given PATTERN (grep -w notation)"
         echo "  exclude <list1> <list2>           - print list2 items exclude list1 items"
         echo "  reg_exclude <list PATTERN> [word list] - print only words that do not match PATTERN"
-#        echo "  reg_wordexclude <list PATTERN> [word list] - print only words do not match PATTERN"
+        echo "  reg_wordexclude <list PATTERN> [word list] - print only words that do not match PATTERN (word boundary)"
+        echo "  reg_include <list PATTERN> [word list] - print only words that match PATTERN"
+        echo "  reg_wordinclude <list PATTERN> [word list] - print only words that match PATTERN (word boundary)"
         echo "  has <PATTERN> string              - check the string for a match to the regular expression given in PATTERN (grep notation)"
         echo "  match <PATTERN> string            - check the string for a match to the regular expression given in PATTERN (egrep notation)"
         echo "  isempty [string] (is_empty)       - true if string has no any symbols (only zero or more spaces)"
-        echo "  has_space [string]                - true if string has no spaces"
+        echo "  has_space [string]                - true if string has whitespace (space, tab, newline)"
         echo "  union [word list]                 - sort and remove duplicates"
         echo "  intersection <list1> <list2>      - print only intersected items (the same in both lists)"
         echo "  difference <list1> <list2>        - symmetric difference between lists items (not in both lists)"
@@ -20771,12 +21715,20 @@ help()
         echo "  firstupper <word list>            - print the words with first letter of each in upper case"
         echo "  tolower <word list>               - print the words in lower case"
         echo
+        echo "Legacy:"
+        echo "  strip_spaces                      - alias for strip"
+        echo
         echo "Examples:"
+        example strip "  hello   world  "
+        echo "echo '  hello   world  ' | \$0 strip -"
 #        example reg_remove "1." "11 12 21 22"
 #        example reg_wordremove "1." "11 12 21 22"
         example exclude "1 3" "1 2 3 4"
         example reg_exclude "22 1." "11 12 21 22"
         example reg_wordexclude "wo.* er" "work were more else"
+        example reg_include "1." "11 12 21 22"
+        example reg_wordinclude "lib" "lib libfoo foolib"
+        example reg_wordinclude "lib.*" "lib-foo libbar other"
         example union "1 2 2 3 3"
         example_res contains "wo" "wo wor"
         example_res contains "word" "wo wor"
@@ -20803,7 +21755,7 @@ if [ "$COMMAND" = "-h" ] || [ "$COMMAND" = "--help" ] ; then
         COMMAND="help"
 fi
 
-#
+# command aliases
 case "$COMMAND" in
     reg_remove|reg_wordremove)
         fatal "obsoleted command $COMMAND"
@@ -21174,6 +22126,11 @@ case $PROGNAME in
         epm_cmd=play
         direct_args=1
         ;;
+    epmps)                     # HELPSHORT: alias for epm play --search
+        epm_cmd=play
+        quoted_args="--search"
+        direct_args=1
+        ;;
     epms)                      # HELPSHORT: alias for epm search
         epm_cmd=search
         direct_args=1
@@ -21277,7 +22234,7 @@ check_command()
     -cl|cl|changelog)         # HELPCMD: show changelog for package
         epm_cmd=changelog
         ;;
-    -qi|qi|info|show)         # HELPCMD: print package detail info
+    -qi|qi|info|show)         # HELPCMD: print package detail info (see epm info --help)
         epm_cmd=info
         ;;
     requires|deplist|depends|req|depends-on)     # HELPCMD: print package requires

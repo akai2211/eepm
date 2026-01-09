@@ -34,7 +34,7 @@ SHAREDIR=$PROGDIR
 # will replaced with /etc/eepm during install
 CONFIGDIR=$PROGDIR/../etc
 
-EPMVERSION="3.64.48"
+EPMVERSION="3.64.49"
 
 # package, single (file), pipe, git
 EPMMODE="package"
@@ -506,8 +506,8 @@ set_sudo()
         return "$SUDO_TESTED"
     fi
 
-    # if input is a console and stderr is a console
-    if inputisatty && isatty2 ; then
+    # if /dev/tty is available and stderr is a console, sudo can ask for password
+    if [ -r /dev/tty ] && [ -w /dev/tty ] && isatty2 ; then
         if ! $SUDO_CMD -n true ; then
             info "Please enter sudo user password to use sudo for all privileged operations in the current session." >&2
             if ! $SUDO_CMD -l >/dev/null ; then
@@ -715,10 +715,16 @@ esu()
     fi
 }
 
+__escape_regex_special()
+{
+    # escape: \ . ^ $ | ( ) [ ] { } +
+    echo "$1" | sed -e 's|[\\.^$|(){}+]|\\&|g' -e 's|\[|\\[|g' -e 's|\]|\\]|g'
+}
+
 __convert_glob__to_regexp()
 {
-    # translate glob to regexp
-    echo "$1" | sed -e "s|\*|.*|g" -e "s|?|.|g"
+    # first escape regex special chars, then translate glob to regexp
+    __escape_regex_special "$1" | sed -e "s|\*|.*|g" -e "s|?|.|g"
 }
 
 regexp_subst()
@@ -846,19 +852,36 @@ calc_sha256sum()
     sha256sum "$1" | awk '{print $1}'
 }
 
+get_checksum_value()
+{
+    echo "$1" | sed 's/^[^:]*://'
+}
+
+calc_checksum()
+{
+    local spec="$1"
+    local file="$2"
+    case "${spec%%:*}" in
+        md5|md5hash)
+            md5sum "$file" ;;
+        sha1|sha1hash)
+            sha1sum "$file" ;;
+        sha512|sha512hash)
+            sha512sum "$file" ;;
+        *)
+            sha256sum "$file" ;;
+    esac | awk '{print $1}'
+}
+
 print_sha256sum()
 {
-    if ! is_command sha256sum ; then
-        info "sha256sum is missed, can't print sha256 for packages..."
-        return
-    fi
-
     local checksum=''
     if [ "$1" = "--checksum" ] ; then
         checksum="$2"
         shift 2
-        pcs="$(calc_sha256sum "$1")"
-        [ "$checksum" = "$pcs" ] || fatal "Checksum verification failed. Awaited checksum: $checksum, package checksum: $pcs"
+        local expected="$(get_checksum_value "$checksum")"
+        local pcs="$(calc_checksum "$checksum" "$1")"
+        [ "$expected" = "$pcs" ] || fatal "Checksum verification failed (${checksum%%:*}). Awaited: $expected, got: $pcs"
     fi
 
     local files="$*"
@@ -887,7 +910,7 @@ get_json_value()
         toutput="$(fetch_url "$1")" || return
         echo "$toutput" | parse_json_value "$2"
     else
-        [ -s "$1" ] || fatal "File $1 is missed, can't get json"
+        [ -s "$1" ] || fatal "File $1 is missing, can't get JSON"
         parse_json_value "$2" < "$1"
     fi
 }
@@ -906,7 +929,7 @@ get_json_values()
         toutput="$(fetch_url "$1")" || return
         echo "$toutput" | parse_json_values "$2"
     else
-        [ -s "$1" ] || fatal "File $1 is missed, can't get json"
+        [ -s "$1" ] || fatal "File $1 is missing, can't get JSON"
         parse_json_values "$2" < "$1"
     fi
 }
@@ -1220,7 +1243,9 @@ has_space()
 
 is_url()
 {
-    echo "$1" | grep -q "^[filehtps]*:/"
+    echo "$1" | grep -qE "^(file|ftp|http|https|rsync):/" && return 0
+    # SSH/rsync URL: host:/path or user@host:/path (but not scheme://)
+    echo "$1" | grep -qE '^[^:]+:/' && ! echo "$1" | grep -q "://"
 }
 
 if a= type -a type 2>/dev/null >/dev/null ; then
@@ -1269,6 +1294,34 @@ subst()
     sed -i -e "$@"
 }
 fi
+
+__epm_suggest_similar_packages()
+{
+    local pkg="$1"
+    local cache="$epm_vardir/available-packages"
+
+    # need cache file
+    [ -s "$cache" ] || return 1
+
+    # need fzf for fuzzy search
+    is_command fzf || return 1
+
+    local similar
+    similar="$(fzf -f "$pkg" < "$cache" 2>/dev/null | head -3)"
+    [ -z "$similar" ] && return 1
+
+    echo ""
+    echo "Perhaps you meant:"
+    echo "$similar" | sed 's/^/  /'
+}
+
+__epm_suggest_similar_packages_by_list()
+{
+    local pkg
+    for pkg in "$@" ; do
+        __epm_suggest_similar_packages "$pkg"
+    done
+}
 
 check_core_commands()
 {
@@ -1624,7 +1677,13 @@ serv_log()
 
     case $SERVICETYPE in
         systemd)
-            sudocmd journalctl -b -u "$SERVICE" "$@"
+            if [ "$1" = "-f" ] ; then
+                shift
+                sudocmd journalctl -f -u "$SERVICE" "$@"
+            else
+                # -e to jump to end of log
+                sudocmd journalctl -e -u "$SERVICE" "$@"
+            fi
             ;;
         *)
             case $BASEDISTRNAME in
@@ -3465,8 +3524,28 @@ check_option()
     return 0
 }
 
+# Check if daemon-reload is needed and run it automatically
+check_daemon_reload()
+{
+        local service="$1"
+        [ -z "$service" ] && return 0
+        # Check NeedDaemonReload property (read-only, no sudo needed)
+        if $SYSTEMCTL $SYSTEMCTL_ARGS show -p NeedDaemonReload "$service" 2>/dev/null | grep -q "NeedDaemonReload=yes" ; then
+                info "Unit file changed, running daemon-reload..."
+                $SYSTEMCTL_RUNNER $SYSTEMCTL $SYSTEMCTL_ARGS daemon-reload
+        fi
+}
+
 run_systemctl()
 {
+        local cmd="$1"
+        local service="$2"
+        # Auto daemon-reload before start/restart/reload
+        case "$cmd" in
+                start|restart|reload|try-restart)
+                        check_daemon_reload "$service"
+                        ;;
+        esac
         $SYSTEMCTL_RUNNER $SYSTEMCTL $SYSTEMCTL_ARGS "$@"
 }
 
