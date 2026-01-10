@@ -55,6 +55,9 @@ epm_full_upgrade()
             "--no-snap")           # HELPCMD: skip snap update during full upgrade
                 full_upgrade_no_snap=1
                 ;;
+            "--no-stplr")          # HELPCMD: skip stplr update during full upgrade
+                full_upgrade_no_stplr=1
+                ;;
             "--no-kernel-update")  # HELPCMD: skip kernel update during full upgrade
                 full_upgrade_no_kernel_update=1
                 ;;
