@@ -236,7 +236,7 @@ case $PROGNAME in
         epm_cmd=update
         direct_args=1
         ;;
-    epm|upm|eepm)              # HELPSHORT: other aliases for epm command
+    epm|eepm)
         ;;
     epm.sh)
         ;;
