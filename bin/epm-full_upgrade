@@ -64,7 +64,7 @@ epm_full_upgrade()
             "--no-clean")          # HELPCMD: no clean after upgrade
                 full_upgrade_no_clean=1
                 ;;
-            "--no-epm-update-check")          # HELPCMD: skip epm update during full upgrade
+            "--no-epm-update-check")          # HELPCMD: skip checking for epm updates during full upgrade
                 full_upgrade_no_epm_update_check=1
                 ;;
         esac
