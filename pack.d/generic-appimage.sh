@@ -25,6 +25,9 @@ PRODUCT="$(basename $alpkg .AppImage)"
 # unpack AppImage
 erc unpack $TAR || fatal
 
+# BASEDIR is the unpacked directory (full name without extension)
+BASEDIR="$PRODUCT"
+
 # try separate VERSION from PRODUCT
 if [ -z "$VERSION" ] ; then
     PRODUCT="${PRODUCT/-x86_64/}"
@@ -32,8 +35,6 @@ if [ -z "$VERSION" ] ; then
     [ -n "$VERSION" ] && PRODUCT="$(echo "$PRODUCT" | sed -e "s|[-_.]$VERSION.*||")"
     [ -n "$VERSION" ] && VERSION="$(echo "$VERSION" | sed -e 's|^v||')"
 fi
-
-BASEDIR="$PRODUCT"
 [ -L "$BASEDIR" ] && [ -d "AppDir" ] && BASEDIR="AppDir"
 
 # try get version from X-AppImage-Version
