@@ -74,17 +74,7 @@ epm_full_upgrade()
 confirm_action()
 {
     [ -n "$interactive" ] || return 0
-    local response
-    # call with a prompt string or use a default
-    read -r -p "${1:-$(eval_gettext 'Are you sure? [Y/n]')} " response
-    case $response in
-        [yY][eE][sS]|[yY]|"")
-            true
-            ;;
-        *)
-            false
-            ;;
-    esac
+    confirm_yes "$1"
 }
 
     atomic=

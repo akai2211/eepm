@@ -627,13 +627,35 @@ confirm() {
     else
         prompt="$(eval_gettext "Are you sure? [y/N]")"
     fi
-    read -r -p "$prompt " response
+    printf "%s " "$prompt" >&2
+    read -r response </dev/tty || return 1
     case $response in
         [yY][eE][sS]|[yY])
             true
             ;;
         *)
             false
+            ;;
+    esac
+}
+
+# confirm with default Yes
+confirm_yes() {
+    local response
+    local prompt
+    if [ -n "$1" ] ; then
+        prompt="$(eval_gettext "$1")"
+    else
+        prompt="$(eval_gettext "Are you sure? [Y/n]")"
+    fi
+    printf "%s " "$prompt" >&2
+    read -r response </dev/tty || return 1
+    case $response in
+        [nN][oO]|[nN])
+            false
+            ;;
+        *)
+            true
             ;;
     esac
 }
