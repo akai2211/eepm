@@ -10,9 +10,9 @@ URL="https://github.com/QSPFoundation/qspgui/releases"
 
 arch=x86_64
 if [ "$VERSION" = "*" ] ; then
-    PKGURL=$(get_github_url "https://github.com/QSPFoundation/qspgui/" "${PKGNAME}-v${VERSION}-$arch.AppImage")
+    PKGURL=$(get_github_url "https://github.com/QSPFoundation/qspgui/" "${PKGNAME}-${VERSION}-$arch.AppImage")
 else
-    PKGURL="https://github.com/QSPFoundation/qspgui/releases/download/v$VERSION/${PKGNAME}-v${VERSION}-$arch.AppImage"
+    PKGURL="https://github.com/QSPFoundation/qspgui/releases/download/v$VERSION/${PKGNAME}-${VERSION}-$arch.AppImage"
 fi
 
 install_pkgurl
