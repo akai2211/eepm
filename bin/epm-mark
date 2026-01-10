@@ -328,11 +328,12 @@ esac
 epm_mark_help()
 {
     message "mark is the interface for marking packages"
+            get_help HELPOPT $SHAREDIR/epm-mark
             get_help HELPCMD $SHAREDIR/epm-mark
     message '
 Examples:
   epm mark hold mc
-  epm manual mc
+  epm mark manual mc
 '
 }
 
@@ -341,7 +342,7 @@ epm_mark()
     local CMD="$1"
     [ -n "$CMD" ] && shift
     case "$CMD" in
-    ""|"-h"|"--help"|help)               # HELPCMD: help
+    ""|"-h"|"--help"|help)               # HELPOPT: help
         epm_mark_help
         ;;
     hold)                             # HELPCMD: mark the given package(s) as held back
