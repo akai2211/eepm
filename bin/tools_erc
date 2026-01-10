@@ -73,7 +73,7 @@ create_archive()
 	esac
 }
 
-# Extract squashfs-based archives (AppImage, squashfs, snap)
+# Extract squashfs-based archives (squashfs, snap)
 extract_squashfs_image()
 {
 	local arc="$1"
@@ -84,6 +84,39 @@ extract_squashfs_image()
 		mkdir -p "$subdir" && cd "$subdir" || fatal
 		docmd $HAVE_7Z x "$arc"
 	fi
+}
+
+# Extract AppImage archives
+extract_appimage()
+{
+	local arc="$1"
+	local subdir="$2"
+
+	# Try unsquashfs with offset from --appimage-offset
+	if is_command unsquashfs ; then
+		local offset
+		chmod +x "$arc" 2>/dev/null
+		offset="$("$arc" --appimage-offset 2>/dev/null)"
+		if [ -n "$offset" ] ; then
+			if docmd unsquashfs -o "$offset" -d "$subdir" "$arc" ; then
+				return 0
+			fi
+		fi
+	fi
+
+	# Fallback to 7z
+	mkdir -p "$subdir" && cd "$subdir" || fatal
+	docmd $HAVE_7Z x "$arc"
+
+	# Fallback to --appimage-extract (disabled by default)
+	#if [ -x "$arc" ] || chmod +x "$arc" ; then
+	#	if "$arc" --appimage-extract >/dev/null 2>&1 ; then
+	#		if [ -d "squashfs-root" ] ; then
+	#			[ "$subdir" != "squashfs-root" ] && mv squashfs-root "$subdir"
+	#			return 0
+	#		fi
+	#	fi
+	#fi
 }
 
 extract_archive()
@@ -112,7 +145,7 @@ extract_archive()
 	fi
 
 	if [ "$type" = "AppImage" ] || [ "$type" = "appimage" ] ; then
-		extract_squashfs_image "$rarc" "$(basename "$(basename "$arc" .AppImage)" .appimage)"
+		extract_appimage "$rarc" "$(basename "$(basename "$arc" .AppImage)" .appimage)"
 		exit
 	fi
 
