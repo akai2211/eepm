@@ -99,23 +99,22 @@ check_tty
 
 phelp()
 {
-    echo "$Descr
-$Usage
-
-$(message "Options:")
-$(get_help HELPOPT)
-
-$(message "Short commands:")
-$(get_help HELPSHORT)
-
-$(get_help HELPCMD)
-
-$(message "
-Examples:
+    echo "$Descr"
+    echo "$Usage"
+    echo ""
+    message "Options:"
+    get_help HELPOPT
+    echo ""
+    message "Short commands:"
+    get_help HELPSHORT
+    echo ""
+    get_help HELPCMD
+    echo ""
+    message "Examples:
     $ epmi etckeeper      install etckeeper package
     $ epmqp lib           print out all installed packages with 'lib' in a name
     $ epmqf ip            print out a package the command 'ip' from is
-")"
+"
 }
 
 print_version()
