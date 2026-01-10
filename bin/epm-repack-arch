@@ -41,7 +41,7 @@ __epm_repack_to_arch()
 {
     local pkg="$1"
 
-    assure_exist_arch debtap
+    assure_exists debtap
 
     repacked_pkg=''
 

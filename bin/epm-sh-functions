@@ -831,19 +831,6 @@ assure_exists()
 }
 
 
-# Assure that an Arch Linux package exists, installing it if necessary
-# Args: command name
-assure_exist_arch()
-{
-    local cmd="$1"
-
-    if ! is_command "$cmd" ; then
-        info "$cmd utility not found, attempting to install it..."
-        docmd epm install "$cmd" || docmd epm install "aur/$cmd"
-    fi
-}
-
-
 assure_exists_erc()
 {
     load_helper epm-assure
