@@ -166,6 +166,10 @@ epm_install_names()
         pacman)
             sudocmd pacman -S $nodeps $@
             return ;;
+        aur-pacman)
+            load_helper epm-install-arch
+            __epm_install_from_aur $@
+            return ;;
         yay)
             docmd yay $nodeps $@
             return ;;

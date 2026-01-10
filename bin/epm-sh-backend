@@ -53,12 +53,19 @@ __get_repo_name() {
     local arg="$1"
     local trepo="$(echo "$arg" | cut -d/ -f1)"
 
+    # ALT Linux branches
     [ "$trepo" = "sisyphus" ] && trepo="Sisyphus"
     [ "$trepo" = "SS" ] && trepo="Sisyphus"
     [ "$trepo" = "archive" ] && repo="archive $(echo "$arg" | cut -d/ -f2)" && name=$(echo "$arg" | cut -d/ -f3) && return
 
     trepo="$(echo "$VALID_BRANCH" | tr ' ' '\n' | grep -w "^$trepo")"
-    [ -n "$trepo" ] && repo="$trepo" && name=$(echo "$arg" | cut -d/ -f2)
+    [ -n "$trepo" ] && repo="$trepo" && name=$(echo "$arg" | cut -d/ -f2) && return
+
+    # Arch Linux AUR
+    if [ "$(echo "$arg" | cut -d/ -f1)" = "aur" ] && [ "$PMTYPE" = "pacman" ] ; then
+        repo="aur"
+        name=$(echo "$arg" | cut -d/ -f2)
+    fi
 }
 
 # call: __process_backend_arguments <function> args...
@@ -117,7 +124,11 @@ __process_repo_arguments() {
     for repo in "${!repo_groups[@]}"; do
         if [ "$repo" = '.' ] ; then
             (PPARGS=1 $func ${repo_groups[$repo]})
+        elif [ "$repo" = 'aur' ] ; then
+            # Arch Linux AUR
+            (PMTYPE=aur-pacman PPARGS=1 $func ${repo_groups[$repo]})
         else
+            # ALT Linux repo switching
             load_helper epm-update
             load_helper epm-reposave
             try_change_alt_repo

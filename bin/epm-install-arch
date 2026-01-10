@@ -1,0 +1,49 @@
+#!/bin/sh
+#
+# Copyright (C) 2012-2020, 2025  Etersoft
+# Copyright (C) 2012-2020, 2025  Vitaly Lipatov <lav@etersoft.ru>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+
+# Install packages from Arch User Repository
+# Args: package names
+__epm_install_from_aur()
+{
+    local pkg
+
+    assure_exists git
+    assure_exists makepkg base-devel
+
+    for pkg in "$@" ; do
+        local tmpdir
+        tmpdir="$(mktemp -d)" || fatal "Could not create temporary directory"
+
+        # Clone the AUR package
+        info "Cloning $pkg from AUR..."
+        if docmd git clone "https://aur.archlinux.org/$pkg.git" "$tmpdir/$pkg" ; then
+            # Build package
+            if ( cd "$tmpdir/$pkg" && docmd makepkg -s --noconfirm ) ; then
+                # Install built package
+                docmd epm install "$tmpdir/$pkg"/*.pkg.tar.*
+            else
+                warning "Failed to build $pkg from AUR"
+            fi
+        else
+            warning "Failed to clone $pkg from AUR"
+        fi
+
+        rm -rf "$tmpdir"
+    done
+}
