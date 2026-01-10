@@ -158,19 +158,17 @@ __list_all_pack_rules()
 
 epm_pack_help()
 {
+    message 'epm pack - create rpm package from files
+Usage: epm pack [options] <packname> <tar|url|dir> [version]'
+    echo ''
+    echog 'Options:'
+    get_help HELPOPT $SHAREDIR/epm-pack
     message '
-epm pack - create rpm package from files
-Usage: epm pack [options] <packname> <tar|url|dir> [version]
-Options:
-    <packname>            - receipt
-    <dir>                 - create tarball from the dir before
+Arguments:
+    <packname>            - pack script name
+    <dir>                 - create tarball from the dir
     <url>                 - download tar from url
     [version]             - force version for unversioned sources
-    --install             - install after pack result
-    --repack              - force repack ever if returned package can be installed without repack
-    --download-only       - save pack result and exit
-    --save-only           - save repacked packages and exit (this is default behaviour)
-    --list                - list all available receipts
 '
 }
 
@@ -179,13 +177,21 @@ epm_pack()
 {
 
 case "$1" in
-    -h|--help)                     # HELPCMD: help
+    -h|--help)                     # HELPOPT: show this help
         epm_pack_help
         return
         ;;
-    --list)                        # HELPCMD: list all available receipts
+    --list)                        # HELPOPT: list all available pack scripts
         __list_all_pack_rules
         return
+        ;;
+    --install)                     # HELPOPT: install after pack result
+        ;;
+    --repack)                      # HELPOPT: force repack even if package can be installed without it
+        ;;
+    --download-only)               # HELPOPT: save pack result and exit
+        ;;
+    --save-only)                   # HELPOPT: save repacked packages and exit (default)
         ;;
     "")
         fatal "Missed pack rule. run with --help to get help."
