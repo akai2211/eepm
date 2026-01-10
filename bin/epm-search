@@ -250,8 +250,8 @@ epm_search()
 {
     [ -n "$1" ] || fatal "Search: search argument(s) is missed"
 
-    # check backend:package syntax
-    if echo "$*" | grep -q -E '(^| )[a-z][a-z][a-z]*:' && [ -z "$PPARGS" ] ; then
+    # check backend:package syntax (snap:pkg, nix:pkg)
+    if __has_backend_syntax "$@" ; then
         __process_backend_arguments __epm_search_internal "$@"
         return
     fi

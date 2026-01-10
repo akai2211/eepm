@@ -19,6 +19,18 @@
 
 VALID_BACKENDS="apt-rpm apt-dpkg apm-rpm stplr aptitude-dpkg deepsolver-rpm urpm-rpm packagekit pkgsrc pkgng redox-pkg emerge pacman yay aura yum-rpm dnf-rpm snappy zypper-rpm mpkg eopkg conary npackd slackpkg homebrew opkg nix apk tce guix termux-pkg aptcyg xbps appget winget"
 
+# Check if args contain backend:package syntax (snap:pkg, nix:pkg)
+__has_backend_syntax()
+{
+    [ -z "$PPARGS" ] && echo "$*" | grep -q -E '(^| )[a-z][a-z][a-z]*:'
+}
+
+# Check if args contain repo/package syntax (p10/pkg, sisyphus/pkg)
+__has_repo_syntax()
+{
+    [ -z "$PPARGS" ] && echo "$*" | grep -q -E '(^| )[a-zA-Z][a-zA-Z0-9]*/'
+}
+
 __get_tpmtype() {
     local arg="$1"
     local tpmtype="$(echo "$arg" | cut -d: -f1)"
@@ -32,6 +44,21 @@ __get_tpmtype() {
     [ "$tpmtype" = "apt" ] && tpmtype="apt-${PMTYPE#*-}"
 
     echo "$VALID_BACKENDS" | tr ' ' '\n' | grep -w "^$tpmtype" | head -1
+}
+
+# TODO: get list
+VALID_BRANCH="p8 p9 p10 p11 Sisyphus c10f2"
+
+__get_repo_name() {
+    local arg="$1"
+    local trepo="$(echo "$arg" | cut -d/ -f1)"
+
+    [ "$trepo" = "sisyphus" ] && trepo="Sisyphus"
+    [ "$trepo" = "SS" ] && trepo="Sisyphus"
+    [ "$trepo" = "archive" ] && repo="archive $(echo "$arg" | cut -d/ -f2)" && name=$(echo "$arg" | cut -d/ -f3) && return
+
+    trepo="$(echo "$VALID_BRANCH" | tr ' ' '\n' | grep -w "^$trepo")"
+    [ -n "$trepo" ] && repo="$trepo" && name=$(echo "$arg" | cut -d/ -f2)
 }
 
 # call: __process_backend_arguments <function> args...
@@ -64,5 +91,41 @@ __process_backend_arguments() {
 
     for pmtype in "${!package_groups[@]}"; do
         (PMTYPE="$pmtype" PPARGS=1 $func ${package_groups[$pmtype]})
+    done
+}
+
+# call: __process_repo_arguments <function> args...
+__process_repo_arguments() {
+    local func="$1"
+    shift
+    local repo
+    local name
+    local arg
+    local repo_groups
+    declare -A repo_groups
+    for arg in "$@"; do
+        repo="."
+        name="$arg"
+        case "$arg" in
+            */*)
+                __get_repo_name "$arg"
+                ;;
+        esac
+        repo_groups["$repo"]+="$name "
+    done
+
+    for repo in "${!repo_groups[@]}"; do
+        if [ "$repo" = '.' ] ; then
+            (PPARGS=1 $func ${repo_groups[$repo]})
+        else
+            load_helper epm-update
+            load_helper epm-reposave
+            try_change_alt_repo
+            docmd epm --auto repo set $repo
+            __epm_update
+            (PPARGS=1 $func ${repo_groups[$repo]})
+            docmd epm repo restore
+            end_change_alt_repo
+        fi
     done
 }

@@ -66,69 +66,20 @@ __separate_sudocmd()
     return 0
 }
 
-# TODO: get list
-VALID_BRANCH="p8 p9 p10 p11 Sisyphus c10f2"
-__set_repo_name() {
-    local arg="$1"
-    local trepo="$(echo "$arg" | cut -d/ -f1)"
-
-    [ "$trepo" = "sisyphus" ] && trepo="Sisyphus"
-    [ "$trepo" = "SS" ] && trepo="Sisyphus"
-    [ "$trepo" = "archive" ] && repo="archive $(echo "$arg" | cut -d/ -f2)" && name=$(echo "$arg" | cut -d/ -f3) && return
-
-    trepo="$(echo "$VALID_BRANCH" | tr ' ' '\n' | grep -w "^$trepo")"
-    [ -n "$trepo" ] && repo="$trepo" && name=$(echo "$arg" | cut -d/ -f2)
-}
-
-
-process_repo_arguments() {
-    local repo
-    local name
-    local arg
-    local repo_groups
-    declare -A repo_groups
-    for arg in "$@"; do
-        repo="."
-        name="$arg"
-        case "$arg" in
-            */*)
-                __set_repo_name "$arg"
-                ;;
-        esac
-        repo_groups["$repo"]+="$name "
-    done
-
-    for repo in "${!repo_groups[@]}"; do
-        if [ "$repo" = '.' ] ; then
-            (PPARGS=1 epm_install_names ${repo_groups[$repo]})
-        else
-            load_helper epm-update
-            load_helper epm-reposave
-            try_change_alt_repo
-            docmd epm --auto repo set $repo
-            __epm_update
-            (PPARGS=1 epm_install_names ${repo_groups[$repo]})
-            docmd epm repo restore
-            end_change_alt_repo
-        fi
-    done
-}
-
-
 # copied from etersoft-build-utils/share/eterbuild/functions/rpmpkg
 epm_install_names()
 {
     [ -z "$1" ] && return
 
-    # check some like nix: prefix, PPARGS for stop possible recursion. TODO
-    if echo "$*" | grep -q -E '(^| )[a-z][a-z][a-z]*:' && [ -z "$PPARGS" ] ; then
+    # check backend:package syntax (snap:pkg, nix:pkg)
+    if __has_backend_syntax "$@" ; then
         __process_backend_arguments epm_install_names "$@"
         return
     fi
 
-    # check some like repo/package, PPARGS for stop possible recursion. TODO
-    if echo "$*" | grep -q -E '(^| )[a-zA-Z][a-zA-Z0-9]*/' && [ -z "$PPARGS" ] ; then
-        process_repo_arguments "$@"
+    # check repo/package syntax (p10/pkg, sisyphus/pkg)
+    if __has_repo_syntax "$@" ; then
+        __process_repo_arguments epm_install_names "$@"
         return
     fi
 

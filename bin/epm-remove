@@ -92,8 +92,8 @@ epm_remove_names()
 {
     [ -z "$1" ] && return
 
-    # check some like nix: prefix, PPARGS for stop possible recursion
-    if echo "$*" | grep -q -E '(^| )[a-z][a-z][a-z]*:' && [ -z "$PPARGS" ] ; then
+    # check backend:package syntax (snap:pkg, nix:pkg)
+    if __has_backend_syntax "$@" ; then
         __process_backend_arguments epm_remove_names "$@"
         return
     fi
