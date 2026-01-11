@@ -710,11 +710,12 @@ esu()
     fi
 }
 
-# Escape regex special characters (except * and ? which are glob patterns)
+# Escape regex special characters (except * ? | which are used in patterns)
 __escape_regex_special()
 {
-    # escape: \ . ^ $ | ( ) [ ] { } +
-    echo "$1" | sed -e 's|[\\.^$|(){}+]|\\&|g' -e 's|\[|\\[|g' -e 's|\]|\\]|g'
+    # escape: \ . ^ $ ( ) [ ] { } +
+    # keep | for OR patterns in search
+    echo "$1" | sed -e 's|[\\.^$(){}+]|\\&|g' -e 's|\[|\\[|g' -e 's|\]|\\]|g'
 }
 
 # copied from eget's filter_glob
