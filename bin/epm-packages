@@ -120,20 +120,20 @@ epm_packages()
 case $PMTYPE in
     *-dpkg)
         warmup_dpkgbase
-        # FIXME: strong equal
-        #CMD="dpkg -l $pkg_filenames"
-        CMD="dpkg-query -W --showformat=\${db:Status-Abbrev}\${Package}-\${Version}:\${Architecture}\n"
-        # TODO: ${Architecture}
-        [ -n "$short" ] && CMD="dpkg-query -W --showformat=\${db:Status-Abbrev}\${Package}\n"
-        showcmd $CMD "$@"
-        $CMD "$@" | grep "^.i" | sed -e "s|.* ||g" | __fo_pfn "$@"
+        if [ -n "$short" ] ; then
+            docmd dpkg-query -W --showformat="\${db:Status-Abbrev}\${Package}\n" "$@" | grep "^.i" | sed -e "s|^.. ||g" | __fo_pfn "$@"
+        else
+            docmd dpkg-query -W --showformat="\${db:Status-Abbrev}\${Package}-\${Version}:\${Architecture} - \${Description}\n" "$@" | grep "^.i" | sed -e "s|^.. ||g" | cut -d'
+' -f1 | __fo_pfn "$@"
+        fi
         return ;;
     *-rpm)
         warmup_rpmbase
-        # FIXME: strong equal
-        CMD="rpm -qa"
-        [ -n "$short" ] && CMD="rpm -qa --queryformat %{name}\n"
-        docmd $CMD "$@" | __fo_pfn "$@"
+        if [ -n "$short" ] ; then
+            docmd rpm -qa --queryformat "%{name}\n" "$@" | __fo_pfn "$@"
+        else
+            docmd rpm -qa --queryformat "%{name}-%{version}-%{release} - %{summary}\n" "$@" | __fo_pfn "$@"
+        fi
         return ;;
     packagekit)
         docmd pkcon get-packages --filter installed
@@ -142,10 +142,20 @@ case $PMTYPE in
         CMD="snappy info"
         ;;
     snap)
-        CMD="snap list"
+        if [ -n "$short" ] ; then
+            docmd snap list 2>/dev/null | tail -n +2 | awk '{print $1}' | __fo_pfn "$@"
+        else
+            docmd snap list 2>/dev/null | tail -n +2 | awk '{print $1"-"$2" - "$4}' | __fo_pfn "$@"
+        fi
+        return
         ;;
     flatpak)
-        CMD="flatpak list --app"
+        if [ -n "$short" ] ; then
+            docmd flatpak list --app --columns=application 2>/dev/null | __fo_pfn "$@"
+        else
+            docmd flatpak list --app --columns=application,version,name 2>/dev/null | awk -F'\t' '{print $1"-"$2" - "$3}' | __fo_pfn "$@"
+        fi
+        return
         ;;
     emerge)
         CMD="qlist -I -C"
@@ -153,30 +163,22 @@ case $PMTYPE in
         isatty && CMD="qlist -I"
         ;;
     pkgsrc)
-        CMD="pkg_info"
-        showcmd $CMD
-        $CMD | sed -e "s| .*||g" | __fo_pfn "$@"
+        docmd pkg_info | sed -e "s| .*||g" | __fo_pfn "$@"
         return ;;
     pkgng)
-        if [ -n "$@" ] ; then
-            CMD="pkg info -E $@"
-        else
-            CMD="pkg info"
-        fi
-        showcmd $CMD
         if [ -n "$short" ] ; then
-            $CMD | sed -e "s| .*||g" | sed -e "s|-[0-9].*||g" | __fo_pfn "$@"
+            docmd pkg info 2>/dev/null | sed -e "s| .*||g" -e "s|-[0-9].*||g" | __fo_pfn "$@"
         else
-            $CMD | sed -e "s| .*||g" | __fo_pfn "$@"
+            docmd pkg info 2>/dev/null | sed -e "s| | - |" | __fo_pfn "$@"
         fi
         return ;;
     pacman)
-        CMD="pacman -Qs $@"
-        showcmd $CMD
         if [ -n "$short" ] ; then
-            $CMD | sed -e "s| .*||g" -e "s|.*/||g" | __fo_pfn "$@"
-            return
+            docmd pacman -Q "$@" 2>/dev/null | sed -e "s| .*||g" | __fo_pfn "$@"
+        else
+            docmd pacman -Qi "$@" 2>/dev/null | awk '/^Name/{name=$3} /^Version/{ver=$3} /^Description/{$1=$2=""; desc=$0} /^$/{print name"-"ver" -"desc}' | __fo_pfn "$@"
         fi
+        return
         ;;
     npackd)
         CMD="npackdcl list --status=installed"
@@ -186,13 +188,23 @@ case $PMTYPE in
         CMD="conary query"
         ;;
     eopkg)
-        CMD="eopkg list-installed"
+        if [ -n "$short" ] ; then
+            docmd eopkg list-installed 2>/dev/null | sed -e "s| .*||g" | __fo_pfn "$@"
+        else
+            docmd eopkg list-installed 2>/dev/null | __fo_pfn "$@"
+        fi
+        return
         ;;
     stplr)
         CMD="stplr list --installed"
         ;;
     pisi)
-        CMD="pisi list-installed"
+        if [ -n "$short" ] ; then
+            docmd pisi list-installed 2>/dev/null | sed -e "s| .*||g" | __fo_pfn "$@"
+        else
+            docmd pisi list-installed 2>/dev/null | __fo_pfn "$@"
+        fi
+        return
         ;;
     choco)
         CMD="choco list"
@@ -211,13 +223,28 @@ case $PMTYPE in
         docmd brew list | xargs -n1 echo
         ;;
     opkg)
-        CMD="opkg list-installed"
+        if [ -n "$short" ] ; then
+            docmd opkg list-installed 2>/dev/null | awk '{print $1}' | __fo_pfn "$@"
+        else
+            docmd opkg list-installed 2>/dev/null | __fo_pfn "$@"
+        fi
+        return
         ;;
     apk)
-        CMD="apk list --installed"
+        if [ -n "$short" ] ; then
+            docmd apk list --installed 2>/dev/null | sed -e "s|-[0-9].*||g" | __fo_pfn "$@"
+        else
+            docmd apk list --installed 2>/dev/null | sed -e "s| \[installed\]||g" | __fo_pfn "$@"
+        fi
+        return
         ;;
     nix)
-        CMD="nix-env -q"
+        if [ -n "$short" ] ; then
+            docmd nix-env -q 2>/dev/null | sed -e "s|-[0-9].*||g" | __fo_pfn "$@"
+        else
+            docmd nix-env -q --description 2>/dev/null | sed -e "s|  *| - |" | __fo_pfn "$@"
+        fi
+        return
         ;;
     tce)
         CMD="ls -1 /usr/local/tce.installed"
@@ -232,34 +259,34 @@ case $PMTYPE in
         CMD="winget list"
         ;;
     termux-pkg)
-        docmd pkg list-installed
+        if [ -n "$short" ] ; then
+            docmd pkg list-installed 2>/dev/null | sed -e "s|/.*||g" | __fo_pfn "$@"
+        else
+            docmd pkg list-installed 2>/dev/null | sed -e "s|/[^ ]* | - |" | __fo_pfn "$@"
+        fi
+        return
         ;;
     xbps)
-        CMD="xbps-query -l"
-        showcmd $CMD
         if [ -n "$short" ] ; then
-            $CMD | sed -e "s|^ii ||g" -e "s| .*||g" -e "s|\(.*\)-.*|\1|g" | __fo_pfn "$@"
+            docmd xbps-query -l 2>/dev/null | sed -e "s|^ii ||g" -e "s| .*||g" -e "s|\(.*\)-.*|\1|g" | __fo_pfn "$@"
         else
-            $CMD | sed -e "s|^ii ||g" -e "s| .*||g" | __fo_pfn "$@"
+            docmd xbps-query -l 2>/dev/null | sed -e "s|^ii ||g" -e "s| \+| - |" | __fo_pfn "$@"
         fi
         return 0
         ;;
     android)
-        CMD="pm list packages"
-        showcmd $CMD
-        $CMD | sed -e "s|^package:||g" | __fo_pfn "$@"
+        docmd pm list packages | sed -e "s|^package:||g" | __fo_pfn "$@"
         return
         ;;
     aptcyg)
-        CMD="apt-cyg list $@"
         if [ -z "$short" ] ; then
-            showcmd $CMD
             # TODO: fix this slow way
-            for i in $($CMD) ; do
+            for i in $(docmd apt-cyg list "$@") ; do
                 __aptcyg_print_full $i
             done
             return
         fi
+        CMD="apt-cyg list"
         ;;
     *)
         fatal 'Have no suitable query command for $PMTYPE'
