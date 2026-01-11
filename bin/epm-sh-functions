@@ -489,10 +489,11 @@ set_sudo()
         return "$SUDO_TESTED"
     fi
 
-    # if /dev/tty is available and stderr is a console, sudo can ask for password
-    if [ -r /dev/tty ] && [ -w /dev/tty ] && isatty2 ; then
+    # if /dev/tty is available, sudo can ask for password (it opens /dev/tty directly)
+    if [ -r /dev/tty ] && [ -w /dev/tty ] ; then
         if ! $SUDO_CMD -n true ; then
-            info "Please enter sudo user password to use sudo for all privileged operations in the current session." >&2
+            # show message only if stderr is a tty (otherwise it might be lost)
+            isatty2 && info "Please enter sudo user password to use sudo for all privileged operations in the current session." >&2
             if ! $SUDO_CMD -l >/dev/null ; then
                 [ "$nofail" = "nofail" ] || SUDO="fatal 'For this operation run epm under root, or install and tune sudo (http://altlinux.org/sudo)'"
                 SUDO_TESTED="3"
