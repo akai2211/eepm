@@ -180,6 +180,12 @@ for i in $CONFIGDIR/eepm.conf $CONFIGDIR/conf.d/*.conf ; do
     [ -f "$i" ] && . "$i"
 done
 
+# export proxy settings if set in config
+# Note: apt may require /etc/apt/apt.conf.d/ config, see https://bugzilla.altlinux.org/38543
+[ -n "$http_proxy" ] && export http_proxy
+[ -n "$https_proxy" ] && export https_proxy
+[ -n "$ftp_proxy" ] && export ftp_proxy
+[ -n "$no_proxy" ] && export no_proxy
 
 case $PROGNAME in
     epmi)                      # HELPSHORT: alias for epm install
