@@ -228,37 +228,23 @@ __change_repo()
 
 __epm_repochange_alt()
 {
+    load_helper epm-repomirrors
+
+    local current_mirror
+    current_mirror=$(__get_current_mirror)
+
     case "$1" in
         "--list")
-            [ -z "$quiet" ] && message "Possible targets:"
-            echo "etersoft datacenter.by truenetwork msu eterfund.org yandex basealt altlinux.org"
-            ;;
-        "etersoft")
-            __change_repo "//download.etersoft.ru/pub ALTLinux"
-            ;;
-        "datacenter.by")
-            __change_repo "//mirror.datacenter.by/pub ALTLinux"
-            ;;
-        "truenetwork")
-            __change_repo "//mirror.truenetwork.ru altlinux"
-            ;;
-        "msu")
-            __change_repo "//mirror.cs.msu.ru alt"
-            ;;
-        "eterfund.org")
-            __change_repo "//mirror.eterfund.org/download.etersoft.ru/pub ALTLinux"
-            ;;
-        "yandex")
-            __change_repo "//mirror.yandex.ru altlinux"
-            ;;
-        "basealt")
-            __change_repo "//ftp.basealt.ru/pub/distributions ALTLinux"
-            ;;
-        "altlinux.org")
-            __change_repo "//ftp.altlinux.org/pub/distributions ALTLinux"
+            __list_mirrors "$current_mirror" "$short"
             ;;
         *)
-            fatal 'Unsupported change key $1'
+            local pattern
+            pattern="$(__alt_mirror_change_pattern "$1")"
+            if [ -n "$pattern" ] ; then
+                __change_repo "$pattern"
+            else
+                fatal "Unsupported mirror: $1. Use --list to see available mirrors."
+            fi
             ;;
     esac
 }
