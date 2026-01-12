@@ -2,7 +2,8 @@
 set -euo pipefail
 
 # detect OS
-. /etc/os-release
+ID="$(./bin/epm print info -d)"
+VERSION_ID="$(./bin/epm print info -v)"
 CI_SYSTEM_ID="$ID-$VERSION_ID"
 
 # args

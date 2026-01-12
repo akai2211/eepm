@@ -82,7 +82,7 @@ for app in $apps; do
   #
   # ALT sisyphus
   #
-  echo "test_${safe_app}_p11:"
+  echo "test_${safe_app}_sisyphus:"
   echo "  stage: test"
   echo "  allow_failure: true"
   echo "  image: alt:sisyphus"
