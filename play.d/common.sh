@@ -686,6 +686,7 @@ fi
 
 # default version value (can be overrided with arg $2 or by update)
 [ -n "$VERSION" ] || VERSION="*"
+[ -n "$RELEASE" ] || RELEASE="*"
 
 echo
 echo "Installing $DESCRIPTION as $PKGNAME $pkgtext ..."
