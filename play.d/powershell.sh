@@ -3,12 +3,13 @@
 PKGNAME=powershell
 SUPPORTEDARCHES="x86_64"
 VERSION="$2"
+RELEASE="$3"
 DESCRIPTION="Microsoft PowerShell from the official site"
 URL="https://github.com/PowerShell/PowerShell"
 
 . $(dirname $0)/common.sh
 
-[ "$VERSION" = "*" ] && VERSION="[0-9]*" || VERSION="$VERSION-1"
+[ "$VERSION" = "*" ] && VERSION="[0-9]*" || VERSION="${VERSION}-${RELEASE}"
 
 reponame=$(epm print info --repo-name)
 vendor=$(epm print info -s)

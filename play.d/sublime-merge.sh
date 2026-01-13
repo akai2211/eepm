@@ -3,6 +3,7 @@
 PKGNAME=sublime-merge
 SUPPORTEDARCHES="x86_64"
 VERSION="$2"
+RELEASE="$3"
 DESCRIPTION="Sublime Merge - Git client from the makers of Sublime Text"
 URL="https://www.sublimemerge.com/"
 TIPS="Run epm play sublime-merge=BUILD to install specific build (e.g. 2121)."
@@ -14,6 +15,6 @@ if [ "$VERSION" = "*" ] ; then
     [ -n "$VERSION" ] || fatal "Can't get version"
 fi
 
-PKGURL="https://download.sublimetext.com/sublime-merge-$VERSION-1.x86_64.rpm"
+PKGURL="https://download.sublimetext.com/sublime-merge-${VERSION}-${RELEASE}.x86_64.rpm"
 
 install_pkgurl

@@ -3,6 +3,7 @@
 PKGNAME=manuskript
 SUPPORTEDARCHES=""
 VERSION="$2"
+RELEASE="$3"
 DESCRIPTION="A open-source tool for writers for Linux from the official site"
 URL="http://www.theologeek.ch/manuskript"
 
@@ -10,10 +11,10 @@ URL="http://www.theologeek.ch/manuskript"
 
 case $(epm print info -p) in
     rpm)
-        file="$PKGNAME-$VERSION-1.noarch.rpm"
+        file="${PKGNAME}-${VERSION}-${RELEASE}.noarch.rpm"
         ;;
     *)
-        file="$PKGNAME-$VERSION-1.deb"
+        file="${PKGNAME}-${VERSION}-${RELEASE}.deb"
         ;;
 esac
 

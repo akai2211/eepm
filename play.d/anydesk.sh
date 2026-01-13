@@ -3,6 +3,7 @@
 PKGNAME=anydesk
 SUPPORTEDARCHES="x86_64"
 VERSION="$2"
+RELEASE="$3"
 DESCRIPTION="AnyDesk from the official site"
 URL="https://download.anydesk.com/linux/"
 
@@ -10,7 +11,7 @@ URL="https://download.anydesk.com/linux/"
 
 # current links:
 
-[ "$VERSION" = "*" ] || VERSION="$VERSION-1"
+[ "$VERSION" = "*" ] || VERSION="${VERSION}-${RELEASE}"
 
 # use el8 build for all systems
 #PKGMASK="$(epm print constructname $PKGNAME "$VERSION.el8")"

@@ -3,6 +3,7 @@
 PKGNAME=onescript-engine
 SUPPORTEDARCHES="x86_64"
 VERSION="$2"
+RELEASE="$3"
 DESCRIPTION="OneScript Engine from the official site"
 TIPS="Run epm play onescript-engine=<version> to install specific version (e.g. 2.0.0 or 1.9.3)."
 URL="https://github.com/EvilBeaver/OneScript"
@@ -22,7 +23,7 @@ else
     pkgtype=$(epm print info -p)
     case $pkgtype in
         rpm)
-            PKGURL="https://github.com/EvilBeaver/OneScript/releases/download/v$VERSION/onescript-engine-$VERSION-1.fc26.noarch.rpm"
+            PKGURL="https://github.com/EvilBeaver/OneScript/releases/download/v${VERSION}/onescript-engine-${VERSION}-${RELEASE}.fc26.noarch.rpm"
             ;;
         *)
             PKGURL="https://github.com/EvilBeaver/OneScript/releases/download/v$VERSION/onescript-engine_${VERSION}_all.deb"

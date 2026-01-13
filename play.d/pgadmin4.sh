@@ -3,6 +3,7 @@
 PKGNAME=pgadmin4-desktop
 SUPPORTEDARCHES="x86_64"
 VERSION="$2"
+RELEASE="$3"
 DESCRIPTION=''
 
 if [ "$1" = "--remove" ] ; then
@@ -12,7 +13,7 @@ fi
 
 . $(dirname $0)/common.sh
 
-[ "$VERSION" = "*" ] || VERSION="$VERSION-1"
+[ "$VERSION" = "*" ] || VERSION="${VERSION}-${RELEASE}"
 
 # TODO:
 #   File "/opt/pgadmin4/web/pgAdmin4.py", line 44, in <module>

@@ -3,6 +3,7 @@
 PKGNAME=Tonkeeper
 SUPPORTEDARCHES="x86_64 aarch64"
 VERSION="$2"
+RELEASE="$3"
 DESCRIPTION="Tonkeeper desktop from the official site"
 URL="https://tonkeeper.com/desktop"
 
@@ -13,7 +14,7 @@ pkgtype="$(epm print info -p)"
 
 case "$pkgtype" in
     rpm)
-        [ "$VERSION" = "*" ] && VERSION="[0-9]*" || VERSION="$VERSION-1"
+        [ "$VERSION" = "*" ] && VERSION="[0-9]*" || VERSION="${VERSION}-${RELEASE}"
         ;;
     *)
         override_pkgname "tonkeeper"

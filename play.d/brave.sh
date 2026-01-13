@@ -4,6 +4,7 @@ BASEPKGNAME=brave-browser
 SUPPORTEDARCHES="x86_64 aarch64"
 PRODUCTALT="'' beta nightly"
 VERSION="$2"
+RELEASE="$3"
 DESCRIPTION="Brave browser from the official site"
 
 . $(dirname $0)/common.sh
@@ -18,7 +19,7 @@ if [ "$VERSION" = "*" ] ; then
 else
     OVERSION="$VERSION"
     # rpm packages have a release in their names
-    [ "$(epm print info -p)" = "rpm" ] && VERSION="$VERSION-1"
+    [ "$(epm print info -p)" = "rpm" ] && VERSION="${VERSION}-${RELEASE}"
     PKGURL="https://github.com/brave/brave-browser/releases/download/v$OVERSION/$(epm print constructname $PKGNAME "$VERSION")"
 fi
 

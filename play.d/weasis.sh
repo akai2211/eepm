@@ -3,6 +3,7 @@
 PKGNAME=weasis
 SUPPORTEDARCHES="x86_64 aarch64"
 VERSION="$2"
+RELEASE="$3"
 DESCRIPTION="Weasis DICOM medical viewer"
 URL="https://github.com/nroduit/Weasis"
 
@@ -11,11 +12,11 @@ URL="https://github.com/nroduit/Weasis"
 arch="$(epm print info -a)"
 case "$(epm print info -p)-$arch" in
     rpm-x86_64)
-        file="weasis-$VERSION-1.$arch.rpm"
+        file="weasis-${VERSION}-${RELEASE}.$arch.rpm"
         ;;
     *)
         arch="$(epm print info --debian-arch)"
-        file="weasis_$VERSION-1_$arch.deb"
+        file="weasis_${VERSION}-${RELEASE}_$arch.deb"
         ;;
 esac
 

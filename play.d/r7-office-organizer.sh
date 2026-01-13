@@ -3,6 +3,7 @@
 PKGNAME=r7organizer
 SUPPORTEDARCHES="x86_64"
 VERSION="$2"
+RELEASE="$3"
 DESCRIPTION="R7 Office Organizer for Linux from the official site"
 URL="https://r7-office.ru/downloadorganizer"
 
@@ -17,8 +18,8 @@ esac
 
 . $(dirname $0)/common.sh
 
-# hack with release part
-[ "$VERSION" = "*" ] || VERSION="$VERSION-1"
+# append release to version
+[ "$VERSION" = "*" ] || VERSION="${VERSION}-${RELEASE}"
 
 case $(epm print info -p) in
     rpm)

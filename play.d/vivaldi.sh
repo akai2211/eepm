@@ -3,6 +3,7 @@
 BASEPKGNAME=vivaldi
 PRODUCTALT="stable snapshot"
 VERSION="$2"
+RELEASE="$3"
 SUPPORTEDARCHES="x86_64 x86 aarch64 armhf"
 DESCRIPTION="Vivaldi browser from the official site"
 URL="https://vivaldi.com"
@@ -24,8 +25,8 @@ esac
 
 warn_version_is_not_supported
 
-# can't use wildcard for -1
-[ "$VERSION" = "*" ] || VERSION="$VERSION-1"
+# can't use wildcard for release
+[ "$VERSION" = "*" ] || VERSION="${VERSION}-${RELEASE}"
 
 # See also https://aur.archlinux.org/cgit/aur.git/tree/PKGBUILD?h=vivaldi
 

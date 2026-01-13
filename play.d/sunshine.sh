@@ -3,6 +3,7 @@
 PKGNAME=Sunshine
 SUPPORTEDARCHES="x86_64 aarch64"
 VERSION="$2"
+RELEASE="$3"
 DESCRIPTION="Self-hosted game stream host for Moonlight"
 TIPS="Run epm play Sunshine=<version> to install specific version (e.g. 2025.924.154138)."
 URL="https://github.com/LizardByte/Sunshine"
@@ -15,9 +16,9 @@ arch=$(epm print info -a)
 
 # Use GitHub releases (Fedora 41 packages work for ALT via repack)
 if [ "$VERSION" != "*" ] ; then
-    PKGURL="https://github.com/LizardByte/Sunshine/releases/download/v$VERSION/Sunshine-$VERSION-1.fc41.$arch.rpm"
+    PKGURL="https://github.com/LizardByte/Sunshine/releases/download/v${VERSION}/Sunshine-${VERSION}-${RELEASE}.fc41.$arch.rpm"
 else
-    PKGURL=$(eget --list --latest https://github.com/LizardByte/Sunshine/releases "Sunshine-*-1.fc41.$arch.rpm")
+    PKGURL=$(eget --list --latest https://github.com/LizardByte/Sunshine/releases "Sunshine-*-${RELEASE}.fc41.$arch.rpm")
 fi
 
 install_pkgurl

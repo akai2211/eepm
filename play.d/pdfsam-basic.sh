@@ -3,6 +3,7 @@
 PKGNAME=pdfsam-basic
 SUPPORTEDARCHES="x86_64"
 VERSION="$2"
+RELEASE="$3"
 DESCRIPTION="is free and open source desktop application to split, merge, extract pages, rotate and mix PDF files"
 URL="https://pdfsam.org/"
 
@@ -10,9 +11,9 @@ URL="https://pdfsam.org/"
 
 #pdfsam-basic_5.3.2-1_amd64.deb
 if [ "$VERSION" = "*" ] ; then
-    PKGURL=$(get_github_url "https://github.com/torakiki/pdfsam/" "${PKGNAME}_${VERSION}-1_amd64.deb")
+    PKGURL=$(get_github_url "https://github.com/torakiki/pdfsam/" "${PKGNAME}_${VERSION}-${RELEASE}_amd64.deb")
 else
-    PKGURL="https://github.com/torakiki/pdfsam/releases/download/v$VERSION/${PKGNAME}_${VERSION}-1_amd64.deb"
+    PKGURL="https://github.com/torakiki/pdfsam/releases/download/v${VERSION}/${PKGNAME}_${VERSION}-${RELEASE}_amd64.deb"
 fi
 
 install_pkgurl
