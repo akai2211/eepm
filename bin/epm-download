@@ -277,9 +277,12 @@ startwith_inlist()
     return 1
 }
 
+    # Non-local variable because `local` builtin returns exit code "0" even if command substitution fails.
+    epm_download_alt__result_url="$(__epm_alt_get_package_url install --reinstall "$@")" || return
+
     # old systems ignore reinstall ?
     local url
-    for url in $(__epm_alt_get_package_url install --reinstall "$@") ; do
+    for url in $epm_download_alt__result_url ; do
         startwith_inlist "$(basename "$url")" "$@" || continue
         [ -n "$print_url" ] && echo "$url" && continue
         # TODO: download together
