@@ -3,19 +3,18 @@
 PKGNAME=tixati
 SUPPORTEDARCHES="x86_64"
 VERSION="$2"
+RELEASE="$3"
 DESCRIPTION='It is a New and Powerful P2P System'
 URL="https://tixati.com/"
 
 . $(dirname $0)/common.sh
 
-[ "$VERSION" = "*" ] || VERSION="$VERSION-1"
-
 case "$(epm print info -p)" in
     rpm)
-        mask="tixati-${VERSION}.x86_64.rpm"
+        mask="tixati-${VERSION}-${RELEASE}.x86_64.rpm"
         ;;
     *)
-        mask="tixati_${VERSION}_amd64.deb"
+        mask="tixati_${VERSION}-${RELEASE}_amd64.deb"
         ;;
 esac
 
