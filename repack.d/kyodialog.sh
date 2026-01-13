@@ -23,6 +23,8 @@ PRODUCTCUR=$PRODUCT$MAJORVERSION
 # embedded
 filter_from_requires "python3(PyPDF3)"
 
+# Qt5 dependencies (system Qt, not bundled)
+add_unirequires libQt5Core.so.5 libQt5DBus.so.5 libQt5Gui.so.5 libQt5Network.so.5 libQt5Widgets.so.5
 
 # remove embedded PyPDF3
 remove_dir /usr/share/kyocera$MAJORVERSION/Python
