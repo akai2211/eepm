@@ -199,19 +199,31 @@ snap_get_version()
     eget -O- -H Snap-Device-Series:16 https://api.snapcraft.io/v2/snaps/info/$SNAPNAME | parse_json_value '["channel-map",0,"version"]'
 }
 
-# return version only for the first package
-get_latest_version()
+# load VERSION and RELEASE from app-versions (sets global variables)
+load_latest_version()
 {
-    local ver
+    local line
     local epmver="$(epm --short --version 2>/dev/null)"
     local URL
+    VERSION=""
+    RELEASE=""
     epmver=$(echo "$epmver" | sed -e 's|\.[0-9]*$||')
     for URL in "https://eepm.ru/releases/$epmver/app-versions" ; do
         echo "Getting latest version from $URL/$1 ..." >&2
-        ver="$(eget -q -O- "$URL/$1" 2>/dev/null)" || continue
-        ver="$(echo "$ver" | head -n1 | cut -d" " -f1)"
-        [ -n "$ver" ] && echo "$ver" && return
+        line="$(eget -q -O- "$URL/$1" 2>/dev/null)" || continue
+        line="$(echo "$line" | head -n1)"
+        VERSION="$(echo "$line" | cut -d" " -f1)"
+        RELEASE="$(echo "$line" | cut -d" " -f2 -s)"
+        [ -n "$VERSION" ] && return 0
     done
+    return 1
+}
+
+# return version only for the first package (compatibility wrapper)
+get_latest_version()
+{
+    load_latest_version "$1"
+    [ -n "$VERSION" ] && echo "$VERSION"
 }
 
 # copied from epm-sh-functions

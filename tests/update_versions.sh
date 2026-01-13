@@ -35,7 +35,13 @@ install_app()
     mv -f $EDIR/$applog $LDIR/$applog
 
     local pkgname="$($EPM play --package-name $app $alt)"
-    $EPM print version for package $pkgname > $TDIR/$pkgname 2>$EDIR/$pkgname && rm -f $EDIR/$pkgname
+    # get version and release from installed package
+    local version="$($EPM print version for package $pkgname)"
+    local release="$($EPM print release for package $pkgname)"
+    # extract RELEASE (everything after epm1.repacked.)
+    local pkgrel=$(echo "$release" | sed -n 's/epm1\.repacked\.//p')
+    # write "VERSION RELEASE" format
+    echo "$version $pkgrel" > $TDIR/$pkgname 2>$EDIR/$pkgname && rm -f $EDIR/$pkgname
     [ -s $TDIR/$pkgname ] || echo "empty file $TDIR/$pkgname" >>$EDIR/errors.txt
     $EPM req $pkgname >$RDIR/$applog
 }
