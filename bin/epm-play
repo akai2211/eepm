@@ -470,15 +470,23 @@ __epm_play_install()
        esac
        local p="$1"
        local v=''
-       # drop spaces
+       local r=''
+       # drop spaces (disable glob to protect *)
+       set -f
        n="$(echo $2)"
+       set +f
        if [ "$n" = "=" ] ; then
            v="$3"
+           # split version-release (last - separates release)
+           if echo "$v" | grep -q '-' ; then
+               r="${v##*-}"
+               v="${v%-*}"
+           fi
            shift 3
        else
            shift
        fi
-       __epm_play_install_one "$p" "$v" $options || RES=1
+       __epm_play_install_one "$p" "$v" "$r" $options || RES=1
    done
 
    return $RES
