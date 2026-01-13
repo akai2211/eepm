@@ -226,6 +226,37 @@ get_latest_version()
     [ -n "$VERSION" ] && echo "$VERSION"
 }
 
+# extract release suffix from package release field
+# epm1.repacked.b1 -> b1, epm1.repacked.1 -> 1
+get_release_suffix()
+{
+    echo "$1" | sed -n 's/epm[0-9]*\.repacked\.//p'
+}
+
+# build full version string for comparison: VERSION-RELEASE
+# usage: build_full_version VERSION [RELEASE]
+build_full_version()
+{
+    local ver="$1"
+    local rel="$2"
+    if [ -n "$rel" ] ; then
+        echo "$ver-$rel"
+    else
+        echo "$ver"
+    fi
+}
+
+# get full version of installed package (VERSION-RELEASE)
+# usage: get_installed_full_version PKGNAME
+get_installed_full_version()
+{
+    local pkg="$1"
+    local ver="$(epm print version for package $pkg | head -n1)"
+    local rel="$(epm print release for package $pkg | head -n1)"
+    local rel_suffix="$(get_release_suffix "$rel")"
+    build_full_version "$ver" "$rel_suffix"
+}
+
 # copied from epm-sh-functions
 # copied from eget's filter_glob
 # check man glob
@@ -508,35 +539,40 @@ is_installed_by_play()
 
 check_for_product_update()
 {
-    # HACK: check version only by first package (we assume all packages have the same version)
-    pkgver="$(epm print version for package $PKGNAME | head -n1)"
-    latestpkgver="$(get_latest_version $PKGNAME)"
+    # get installed version (VERSION-RELEASE format)
+    local fullpkgver="$(get_installed_full_version $PKGNAME)"
 
-    # ignore update if have no latest package version or the latest package version no more than installed one
-    [ -n "$pkgver" ] || return
+    # load latest version and release from app-versions
+    load_latest_version $PKGNAME
+    latestpkgver="$VERSION"
+    local fulllatestver="$(build_full_version "$VERSION" "$RELEASE")"
+
+    # ignore update if package is not installed
+    [ -n "$fullpkgver" ] || return
 
     if [ -z "$latestpkgver" ] ; then
-        echo "Can't get info about latest version of $PKGNAME, so skip updating installed version $pkgver."
+        echo "Can't get info about latest version of $PKGNAME, so skip updating installed version $fullpkgver."
         exit
     fi
-    # latestpkgver <= $pkgver
+    # fulllatestver <= fullpkgver
     if [ -z "$force" ] || [ -z "$latest" ] ; then
-        if [ "$(epm print compare package version $latestpkgver $pkgver)" != "1" ] ; then
-            if [ "$latestpkgver" = "$pkgver" ] ; then
-                echo "Latest available version of $PKGNAME $latestpkgver is already installed."
+        if [ "$(epm print compare package version $fulllatestver $fullpkgver)" != "1" ] ; then
+            if [ "$fulllatestver" = "$fullpkgver" ] ; then
+                echo "Latest available version of $PKGNAME $fulllatestver is already installed."
             else
-                echo "Latest available version of $PKGNAME: $latestpkgver, but you have a newer version installed: $pkgver."
+                echo "Latest available version of $PKGNAME: $fulllatestver, but you have a newer version installed: $fullpkgver."
             fi
             exit
         fi
     fi
 
-    #echo "Updating $PKGNAME from $pkgver to the latest available version (equal to $latestpkgver or newer) ..."
+    #echo "Updating $PKGNAME from $fullpkgver to the latest available version (equal to $fulllatestver or newer) ..."
     if [ -n "$force" ] || [ -z "$latest" ] ; then
-        echo "Updating $PKGNAME from $pkgver to latest available version ..."
+        echo "Updating $PKGNAME from $fullpkgver to latest available version ..."
     else
-        echo "Updating $PKGNAME from $pkgver to $latestpkgver version ..."
+        echo "Updating $PKGNAME from $fullpkgver to $fulllatestver version ..."
         VERSION="$latestpkgver"
+        # RELEASE already set by load_latest_version
     fi
 }
 
@@ -594,11 +630,12 @@ case "$1" in
         exit
         ;;
     "--installed-version")
-        epm print version for package $PKGNAME | head -n1
+        get_installed_full_version $PKGNAME
         exit
         ;;
     "--available-version")
-        get_latest_version $PKGNAME
+        load_latest_version $PKGNAME
+        build_full_version "$VERSION" "$RELEASE"
         exit
         ;;
     "--update")
@@ -640,8 +677,8 @@ is_repacked_packages $REPOPKGNAME || exit 0
 [ "$PKGNAME" = "hplip-plugin" ] && VERSION="*" && RELEASE="*"
 
 if [ -z "$VERSION" ] && [ -z "$force" ] && [ -z "$latest" ] ; then
-    # by default use latest known version to install
-    VERSION="$(get_latest_version $PKGNAME)"
+    # by default use latest known version to install (also sets RELEASE)
+    load_latest_version $PKGNAME
     CHECKED_VERSION="$VERSION"
     # hack
     [ -n "VERSION" ] && [ -z "$RELEASE" ] && RELEASE="1"

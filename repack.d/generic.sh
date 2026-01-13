@@ -160,10 +160,6 @@ set_rpm_field()
 # FIXME: where is a source of the bug with empty Summary?
 summary="$(grep "^Summary: " $SPEC | sed -e "s|Summary: ||g" | head -n1)"
 [ -n "$summary" ] || set_rpm_field "Summary" "$PRODUCT (fixme: was empty Summary after alien)"
-# clean version
-subst "s|^\(Version: .*\)~.*|\1|" $SPEC
-# add our prefix to release
-subst "s|^Release: |Release: epm1.repacked.|" $SPEC
 set_rpm_field "Distribution" "EEPM"
 
 if [ -r "$PKG.eepm.yaml" ] ; then
@@ -185,6 +181,16 @@ else
     [ -f "$exya" ] && warning "$PKG.eepm.yaml is missed, but $exya is exists"
     subst "s|^\((Converted from a\) \(.*\) \(package.*\)|(Repacked from binary \2 package with EPM $(epm --short --version))\n\1 \2 \3|" $SPEC
 fi
+
+# for appimage/tar: replace dash with tilde in version suffix (like -b1 -> ~b1) for correct version comparison
+# for rpm/deb: suffix is already in Release field
+version=$(grep "^Version:" $SPEC | sed 's/Version: //')
+if [ -n "$SUBGENERIC" ] && echo "$version" | grep -q '-' ; then
+    new_version=$(echo "$version" | sed 's/-/~/')
+    subst "s|^Version: $version|Version: $new_version|" $SPEC
+fi
+# add our prefix to release (preserves original release for rpm/deb)
+subst "s|^Release: |Release: epm1.repacked.|" $SPEC
 
 if ! grep "^%defattr" $SPEC ; then
     subst "s|^%files$|%files\n%defattr(-,root,root,755)|" $SPEC
