@@ -201,10 +201,10 @@ __epm_repack_to_rpm()
         if [ -n "$verbose" ] || [ -n "$debug" ] ; then
             verbose1="$verbose"
             [ -n "$debug" ] && verbose1="--veryverbose"
-            docmd $fakeroot alien --generate --to-rpm $verbose1 $scripts "../$alpkg" || fatal
+            docmd $fakeroot alien --generate --to-rpm --keep-version $verbose1 $scripts "../$alpkg" || fatal
         else
-            showcmd $fakeroot alien --generate --to-rpm $scripts "../$alpkg"
-            a='' $fakeroot alien --generate --to-rpm $scripts "../$alpkg" >/dev/null || fatal
+            showcmd $fakeroot alien --generate --to-rpm --keep-version $scripts "../$alpkg"
+            a='' $fakeroot alien --generate --to-rpm --keep-version $scripts "../$alpkg" >/dev/null || fatal
         fi
 
         # remove all empty dirs (hack against broken dpkg with LF in the end of line) (hack for linux_pantum.deb)
