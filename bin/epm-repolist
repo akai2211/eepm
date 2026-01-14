@@ -29,49 +29,32 @@ Usage: epm repo list [options] [pattern]'
     get_help HELPOPT $SHAREDIR/epm-repolist
 }
 
-__print_apt_sources_list()
+# Output apt sources lines from files
+# Usage: __cat_apt_sources_list grep_pattern files...
+__cat_apt_sources_list()
 {
-    local grepflags="$1"
-    local regexp="$2"
-    shift 2
+    local pattern="$1"
+    shift
     local i
-    local res=1
-    [ -n "$regexp" ] || res=0
     for i in $@ ; do
         test -r "$i" || continue
-        grep -v -- "^.*#" $i
-    done | grep -v -- "^ *\$" | grep $grepflags "$regexp" && res=0
-    return $res
+        grep -- "$pattern" $i
+    done | grep -v -- "^ *\$"
+}
+
+__print_apt_sources_list()
+{
+    __cat_apt_sources_list "^[^#]*rpm" "$@"
 }
 
 __print_apt_sources_list_full()
 {
-    local grepflags="$1"
-    local regexp="$2"
-    shift 2
-    local i
-    local res=1
-    [ -n "$regexp" ] || res=0
-    for i in $@ ; do
-        test -r "$i" || continue
-        grep -- "^[[:space:]]*#*[[:space:]]*rpm" $i
-    done | grep -v -- "^ *\$" | grep $grepflags "$regexp" && res=0
-    return $res
+    __cat_apt_sources_list "^[[:space:]]*#*[[:space:]]*rpm" "$@"
 }
 
 __print_apt_sources_list_disabled()
 {
-    local grepflags="$1"
-    local regexp="$2"
-    shift 2
-    local i
-    local res=1
-    [ -n "$regexp" ] || res=0
-    for i in $@ ; do
-        test -r "$i" || continue
-        grep -- "^[[:space:]]*#[[:space:]]*rpm" $i
-    done | grep -v -- "^ *\$" | grep $grepflags "$regexp" && res=0
-    return $res
+    __cat_apt_sources_list "^[[:space:]]*#[[:space:]]*rpm" "$@"
 }
 
 # TODO: remove
@@ -144,43 +127,35 @@ print_apt_sources_list()
 {
     local LISTS="$APT_ALL_SOURCES_LIST"
     # flagall, flagdisabled, regexp are set by epm_repolist()
-    local flagregex="$regexp"
-
-    local wc="$*"
-    local grepflags=""
-    if [ -n "$flagregex" ] ; then
-        # raw regex mode - no glob conversion
-        grepflags="-E"
-    elif echo "$wc" | grep -q -E "^(deb|rpm) " ; then
-        grepflags="-F"
-    else
-        echo "$wc" | grep -q "\.[*?]" && warning "Only glob symbols * and ? are supported. Don't use regexp here!"
-        wc="$(__convert_glob__to_regexp "$wc")"
-        grepflags="-E"
-    fi
-
-    if [ -n "$flagall" ] ; then
-        if [ -n "$quiet" ] ; then
-            __print_apt_sources_list_full "$grepflags" "$wc" $LISTS
-        else
-            __print_apt_sources_list_verbose_full "$grepflags" "$wc" $LISTS
-        fi
-        return
-    fi
-
-    if [ -n "$flagdisabled" ] ; then
-        if [ -n "$quiet" ] ; then
-            __print_apt_sources_list_disabled "$grepflags" "$wc" $LISTS
-        else
-            __print_apt_sources_list_verbose_disabled "$grepflags" "$wc" $LISTS
-        fi
-        return
-    fi
 
     if [ -n "$quiet" ] ; then
-        __print_apt_sources_list "$grepflags" "$wc" $LISTS
+        if [ -n "$flagall" ] ; then
+            __print_apt_sources_list_full $LISTS | __filter_repos_list "$@"
+        elif [ -n "$flagdisabled" ] ; then
+            __print_apt_sources_list_disabled $LISTS | __filter_repos_list "$@"
+        else
+            __print_apt_sources_list $LISTS | __filter_repos_list "$@"
+        fi
     else
-        __print_apt_sources_list_verbose "$grepflags" "$wc" $LISTS
+        # verbose mode - use old functions with grep
+        local wc="$*"
+        local grepflags=""
+        if [ -n "$regexp" ] ; then
+            grepflags="-E"
+        elif echo "$wc" | grep -q -E "^(deb|rpm) " ; then
+            grepflags="-F"
+        else
+            wc="$(__convert_glob__to_regexp "$wc")"
+            grepflags="-E"
+        fi
+
+        if [ -n "$flagall" ] ; then
+            __print_apt_sources_list_verbose_full "$grepflags" "$wc" $LISTS
+        elif [ -n "$flagdisabled" ] ; then
+            __print_apt_sources_list_verbose_disabled "$grepflags" "$wc" $LISTS
+        else
+            __print_apt_sources_list_verbose "$grepflags" "$wc" $LISTS
+        fi
     fi
 }
 
