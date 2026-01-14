@@ -69,7 +69,7 @@ __print_apt_sources_list_list()
     local i
     for i in $@ ; do
         test -r "$i" || continue
-        grep -v -- "^.*#" $i | grep -v -- "^ *\$" | grep -q . && echo "$i"
+        grep -v -- "^[[:space:]]*#" $i | grep -v -- "^ *\$" | grep -q . && echo "$i"
     done
 }
 
@@ -90,8 +90,8 @@ __print_apt_sources_list_verbose()
     [ -n "$regexp" ] || res=0
     for i in $@ ; do
         test -r "$i" || continue
-        grep -v -- "^.*#" $i | grep -v -- "^ *\$" | grep -q . && __info_cyan "$i:" || continue
-        grep -v -- "^.*#" $i | grep -v -- "^ *\$" | sed -e 's|^|    |' | grep $grepflags --color "$regexp" && res=0
+        grep -v -- "^[[:space:]]*#" $i | grep -v -- "^ *\$" | grep -q . && __info_cyan "$i:" || continue
+        grep -v -- "^[[:space:]]*#" $i | grep -v -- "^ *\$" | sed -e 's|^|    |' | grep $grepflags --color "$regexp" && res=0
     done
     return $res
 }
