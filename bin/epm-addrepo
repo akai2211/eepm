@@ -238,6 +238,8 @@ __add_line_to_file()
 
 
 # like apt-add-repository on deb systems
+# For sources.list.d/*.list: uncomment if commented line exists
+# Otherwise: add to specified file
 __epm_addrepo_to_file()
 {
     local file="$1"
@@ -251,6 +253,11 @@ __epm_addrepo_to_file()
 
     if [ -n "$dryrun" ] ; then
         echo "$repo"
+        return
+    fi
+
+    # try to uncomment in sources.list.d first
+    if epm repo enable "^$repo" 2>/dev/null ; then
         return
     fi
 
