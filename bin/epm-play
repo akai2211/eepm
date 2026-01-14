@@ -68,6 +68,7 @@ __get_app_package()
 __get_resolved_app_package()
 {
     local basepkgname
+    local productalt
     local pkglist="$2"
 
     #if [ "$BASEDISTRNAME" != "alt" ] ; then
@@ -78,9 +79,22 @@ __get_resolved_app_package()
     basepkgname="$(grep -oP "^BASEPKGNAME=[\"']*\K[^\"']+" "$psdir/$1.sh")"
     # lithium construct PKGNAME
     [ -z "$basepkgname" ] && __get_app_package "$1" && return # || fatal "Missed both PKGNAME and BASEPKGNAME in the play script $1."
-    # fixme: space at the end?
+
+    # Check exact base package name first
     grep -o -m1 -E "^$basepkgname[ $]" $pkglist && return
-    grep -o -m1 -E "^$basepkgname-[a-z0-9-]*[ $]" $pkglist && return
+
+    # If PRODUCTALT is defined, check only those specific alternatives
+    productalt="$(grep -oP "^PRODUCTALT=[\"']*\K[^\"']+" "$psdir/$1.sh")"
+    if [ -n "$productalt" ] ; then
+        local alt
+        for alt in $productalt ; do
+            [ "$alt" = "''" ] && continue
+            grep -o -m1 -E "^$basepkgname-$alt[ $]" $pkglist && return
+        done
+    else
+        # Fallback: match any suffix (for scripts without PRODUCTALT)
+        grep -o -m1 -E "^$basepkgname-[a-z0-9-]*[ $]" $pkglist && return
+    fi
 }
 
 __list_all_packages()

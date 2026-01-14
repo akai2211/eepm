@@ -477,11 +477,21 @@ is_installed_by_play()
         epm status --repacked $pkg && return 0
     fi
 
-    # If BASEPKGNAME is set, check any package matching BASEPKGNAME-*
+    # If BASEPKGNAME and PRODUCTALT are set, check only valid alternatives
     [ -n "$BASEPKGNAME" ] || return 1
+    [ -n "$PRODUCTALT" ] || return 1
     local i
-    for i in $(epm qp --short "$BASEPKGNAME*" 2>/dev/null) ; do
-        epm status --repacked "$i" && return 0
+    for i in $PRODUCTALT ; do
+        if [ "$i" = "''" ] ; then
+            # Check base package without suffix
+            if epm status --installed "$BASEPKGNAME" ; then
+                epm status --repacked "$BASEPKGNAME" && return 0
+            fi
+        else
+            if epm status --installed "$BASEPKGNAME-$i" ; then
+                epm status --repacked "$BASEPKGNAME-$i" && return 0
+            fi
+        fi
     done
 
     return 1
