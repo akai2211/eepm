@@ -1279,6 +1279,16 @@ has_space()
         return 1
 }
 
+# Filter glob pattern list, return only existing files
+# Usage: filter_glob_list /etc/file /etc/dir/*.ext
+filter_glob_list()
+{
+    local f
+    for f in "$@" ; do
+        [ -e "$f" ] && printf "%s " "$f"
+    done
+}
+
 
 is_url()
 {
