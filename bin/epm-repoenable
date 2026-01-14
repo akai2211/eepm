@@ -33,8 +33,8 @@ __epm_repoenable_alt()
             return 1
         fi
     else
-        rl="$( epm --quiet repolist --all 2>/dev/null | grep -F "$1" | sed -e 's|[[:space:]]*#[[:space:]]*||' )"
-        [ -z "$rl" ] && warning 'Can'\''t find commented $1 in the repos (see # epm repolist output)' && return 1
+        rl="$(__get_repo_lines --all "$@" | sed -e 's|[[:space:]]*#[[:space:]]*||')"
+        [ -z "$rl" ] && warning 'Can'\''t find commented $* in the repos (see epm repolist --all output)' && return 1
     fi
     local apt_lists
     apt_lists="$(filter_glob_list $APT_ALL_SOURCES_LIST)"
