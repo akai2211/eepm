@@ -33,7 +33,7 @@ __epm_repoenable_alt()
             return 1
         fi
     else
-        rl="$(__get_repo_lines --all "$@" | sed -e 's|[[:space:]]*#[[:space:]]*||')"
+        rl="$(epm --quiet repo list --all "$@" | sed -e 's|[[:space:]]*#[[:space:]]*||')"
         [ -z "$rl" ] && warning 'Can'\''t find commented $* in the repos (see epm repolist --all output)' && return 1
     fi
     local apt_lists

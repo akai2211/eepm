@@ -62,15 +62,3 @@ __filter_repos_list()
 
     echo "$result"
 }
-
-# Get repo lines filtered by patterns
-# Usage: __get_repo_lines [--all] pattern1 pattern2 ~exclude
-__get_repo_lines()
-{
-    local all_flag=""
-    if [ "$1" = "--all" ] ; then
-        all_flag="--all"
-        shift
-    fi
-    epm --quiet repo list $all_flag 2>/dev/null | __filter_repos_list "$@"
-}
