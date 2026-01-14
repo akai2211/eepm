@@ -21,6 +21,9 @@ load_helper epm-sh-altlinux
 
 epm_repo_help()
 {
+    message 'epm repo - manage package repositories
+Usage: epm repo [command] [options]
+'
     get_help HELPCMD $SHAREDIR/epm-repo
     message '
 
