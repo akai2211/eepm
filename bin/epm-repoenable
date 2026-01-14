@@ -23,6 +23,7 @@ load_helper epm-sh-repo
 
 __epm_repoenable_alt()
 {
+    assure_root
     local rl
     # ^rpm means full string
     if rhas "$1" "\^rpm" ; then
@@ -32,12 +33,15 @@ __epm_repoenable_alt()
             return 1
         fi
     else
-        rl="$( epm --quiet repolist --all 2>/dev/null | grep -F "$1" | head -n1 | sed -e 's|[[:space:]]*#[[:space:]]*||' )"
+        rl="$( epm --quiet repolist --all 2>/dev/null | grep -F "$1" | sed -e 's|[[:space:]]*#[[:space:]]*||' )"
         [ -z "$rl" ] && warning 'Can'\''t find commented $1 in the repos (see # epm repolist output)' && return 1
     fi
+    local apt_lists
+    apt_lists="$(filter_glob_list $APT_ALL_SOURCES_LIST)"
+    [ -z "$apt_lists" ] && return 0
     echo "$rl" | while read rp ; do
         [ -n "$dryrun" ] && message 'will uncomment $rp' && continue
-        sed -i -e "s|^[[:space:]]*#[[:space:]]*\($(sed_escape "$rl")\)|\1|" $APT_ALL_SOURCES_LIST
+        sed -i -e "s|^[[:space:]]*#[[:space:]]*\($(sed_escape "$rp")\)|\1|" $apt_lists
     done
 }
 
@@ -47,7 +51,6 @@ epm_repoenable()
 
 case $PMTYPE in
     apt-rpm|apm-rpm)
-        assure_root
         __epm_repoenable_alt "$@"
         ;;
     apt-dpkg|aptitude-dpkg)
