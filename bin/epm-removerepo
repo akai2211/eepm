@@ -47,11 +47,11 @@ __epm_removerepo_apt()
         return
     fi
 
+    # main sources.list: delete lines (first, so disable won't touch it)
+    __apt_delete_repo_line "$repo"
+
     # sources.list.d: comment lines instead of deleting
     epm repo disable "^$repo" 2>/dev/null
-
-    # main sources.list: delete lines
-    __apt_delete_repo_line "$repo"
 }
 
 
