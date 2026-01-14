@@ -20,7 +20,23 @@
 load_helper epm-sh-altlinux
 
 
+# Remove repo line from /etc/apt/sources.list (delete line)
+__apt_delete_repo_line()
+{
+    local repo="$1"
+
+    local sc="sudocmd"
+    [ -z "$quiet" ] || sc="sudorun"
+
+    # touch file only when it is needed
+    grep -q -F "$repo" /etc/apt/sources.list || return
+    $sc sed -i -e "\|$(sed_escape "$repo")|d" /etc/apt/sources.list
+}
+
+
 # like apt-add-repository --remove on deb systems
+# For /etc/apt/sources.list: delete lines
+# For /etc/apt/sources.list.d/*.list: comment lines via epm repo disable
 __epm_removerepo_apt()
 {
     local repo="$*"
@@ -31,17 +47,11 @@ __epm_removerepo_apt()
         return
     fi
 
-    local sc="sudocmd"
-    [ -z "$quiet" ] || sc="sudorun"
+    # sources.list.d: comment lines instead of deleting
+    epm repo disable "^$repo" 2>/dev/null
 
-    local i
-    for i in /etc/apt/sources.list /etc/apt/sources.list.d/*.list ; do
-        [ -s "$i" ] || continue
-        # touch file only when it is needed
-        grep -q -F "$repo" $i || continue
-        
-        $sc sed -i -e "\|$(sed_escape "$repo")|d" $i
-    done
+    # main sources.list: delete lines
+    __apt_delete_repo_line "$repo"
 }
 
 
