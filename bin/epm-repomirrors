@@ -19,12 +19,15 @@
 
 # Load ALT Linux mirror database from config file
 # Format: name URL (space-separated)
+# Sets __ALT_MIRROR_DB (all mirrors) and __ALT_MIRROR_DB_VISIBLE (without legacy)
 __load_alt_mirror_db()
 {
     [ -n "$__ALT_MIRROR_DB" ] && return
     local mirror_file="$CONFIGDIR/mirrors-alt.list"
     if [ -f "$mirror_file" ] ; then
         __ALT_MIRROR_DB="$(grep -v '^#' "$mirror_file" | grep -v '^$')"
+        # visible mirrors: everything before "# Legacy" line
+        __ALT_MIRROR_DB_VISIBLE="$(sed -n '/^# Legacy/q;p' "$mirror_file" | grep -v '^#' | grep -v '^$')"
     else
         fatal "Mirror list not found: $mirror_file"
     fi
@@ -91,6 +94,7 @@ EOF
 
 # List mirrors in human-readable or TSV format
 # Args: current_mirror [short]
+# Uses __ALT_MIRROR_DB_VISIBLE (excludes legacy mirrors)
 __list_mirrors()
 {
     __load_alt_mirror_db
@@ -125,7 +129,7 @@ __list_mirrors()
             fi
         fi
     done <<EOF
-$__ALT_MIRROR_DB
+$__ALT_MIRROR_DB_VISIBLE
 EOF
     [ -n "$short" ] && [ -z "$tsv" ] && echo ""
     return 0
@@ -168,6 +172,7 @@ __test_single_mirror()
 
 # Test all mirrors and collect results
 # Outputs results in real-time to stderr, returns sorted results to stdout
+# Uses __ALT_MIRROR_DB_VISIBLE (excludes legacy mirrors)
 __test_all_mirrors()
 {
     __load_alt_mirror_db
@@ -194,7 +199,7 @@ __test_all_mirrors()
         results="${results}${speed}|${name}|${url}
 "
     done <<EOF
-$__ALT_MIRROR_DB
+$__ALT_MIRROR_DB_VISIBLE
 EOF
 
     # Sort by speed (descending) and format output
