@@ -63,6 +63,13 @@ __print_apt_sources_list_disabled()
     done
 }
 
+__print_file_header()
+{
+    set_boldcolor $CYAN
+    echo "$1:" >&2
+    restore_color
+}
+
 # repo_filter_patterns is set by print_apt_sources_list
 __print_apt_sources_list_verbose()
 {
@@ -70,7 +77,7 @@ __print_apt_sources_list_verbose()
     for i in "$@" ; do
         content="$(__cat_apt_sources_list "^[^#]*rpm" "$i" | __filter_repos_list $repo_filter_patterns)"
         [ -n "$content" ] || continue
-        info "$i:"
+        __print_file_header "$i"
         echo "$content" | sed -e 's|^|    |'
     done
 }
@@ -81,8 +88,9 @@ __print_apt_sources_list_verbose_full()
     for i in "$@" ; do
         content="$(__cat_apt_sources_list "^[[:space:]]*#*[[:space:]]*rpm" "$i" | __filter_repos_list $repo_filter_patterns)"
         [ -n "$content" ] || continue
-        info "$i:"
-        echo "$content" | sed -e 's|^|    |'
+        __print_file_header "$i"
+        # highlight commented lines
+        echo "$content" | sed -e 's|^|    |' -e "s|^\(    #.*\)|$(set_color $WHITE)\1$(restore_color)|"
     done
 }
 
@@ -92,7 +100,7 @@ __print_apt_sources_list_verbose_disabled()
     for i in "$@" ; do
         content="$(__cat_apt_sources_list "^[[:space:]]*#[[:space:]]*rpm" "$i" | __filter_repos_list $repo_filter_patterns)"
         [ -n "$content" ] || continue
-        info "$i:"
+        __print_file_header "$i"
         echo "$content" | sed -e 's|^|    |'
     done
 }
