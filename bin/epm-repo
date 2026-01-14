@@ -137,6 +137,10 @@ epm_repo()
         load_helper epm-repofix
         epm_repofix "$@"
         ;;
+    mirrors)                          # HELPCMD: list and test ALT Linux mirrors (--speedtest to test speed)
+        load_helper epm-repomirrors
+        epm_repomirrors "$@"
+        ;;
 
 # HELPCMD: PART: Local repo commands:
     create)                            # HELPCMD: create (initialize) repo: [path] [name]
