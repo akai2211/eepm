@@ -21,3 +21,56 @@
 APT_SOURCES_LIST="${EPM_APT_SOURCES_ROOT%/}/etc/apt/sources.list"
 APT_SOURCES_LIST_D="${EPM_APT_SOURCES_ROOT%/}/etc/apt/sources.list.d"
 APT_ALL_SOURCES_LIST="$APT_SOURCES_LIST $APT_SOURCES_LIST_D/*.list"
+
+# Filter stdin by patterns (AND logic, case insensitive)
+# Supports glob (* ?) and exclusion (~pattern)
+# Usage: echo "$lines" | __filter_repos_list pattern1 pattern2 ~exclude
+__filter_repos_list()
+{
+    local i
+    [ -z "$*" ] && cat && return
+
+    local list=""
+    local listN=""
+    for i in "$@" ; do
+        case "$i" in
+            ~*)
+                listN="$listN ${i#\~}"
+                ;;
+            *)
+                list="$list $i"
+                ;;
+        esac
+    done
+
+    # convert glob to regexp
+    list=$(__convert_glob__to_regexp "$list")
+    listN=$(__convert_glob__to_regexp "$listN")
+
+    listN=$(strip_spaces $listN | sed -e 's/ /|/g')
+
+    local result
+    result="$(cat)"
+
+    # exclude patterns
+    [ -n "$listN" ] && result="$(echo "$result" | grep -E -i -v -- "$listN")"
+
+    # include patterns (AND)
+    for i in $list ; do
+        result="$(echo "$result" | grep -E -i -- "$i")"
+    done
+
+    echo "$result"
+}
+
+# Get repo lines filtered by patterns
+# Usage: __get_repo_lines [--all] pattern1 pattern2 ~exclude
+__get_repo_lines()
+{
+    local all_flag=""
+    if [ "$1" = "--all" ] ; then
+        all_flag="--all"
+        shift
+    fi
+    epm --quiet repo list $all_flag 2>/dev/null | __filter_repos_list "$@"
+}
