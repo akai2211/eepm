@@ -8,3 +8,6 @@ eterfund.org https://mirror.eterfund.org/download.etersoft.ru/pub/ALTLinux
 datacenter.by https://mirror.datacenter.by/pub/ALTLinux
 truenetwork https://mirror.truenetwork.ru/altlinux
 msu https://mirror.cs.msu.ru/alt
+# Legacy mirrors (for backward compatibility, not shown in --list)
+altsp.su https://update.altsp.su/pub/distributions/ALTLinux
+ftp.etersoft.ru https://ftp.etersoft.ru/pub/ALTLinux
