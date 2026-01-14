@@ -188,7 +188,6 @@ __epm_print_url_alt_check()
     local tm
     tm="$(mktemp)" || fatal
     remove_on_exit $tm
-    assure_exists curl
     load_helper epm-site
     quiet=1
     local buildtime=$(paoapi packages/$pkg | get_pao_var buildtime)
