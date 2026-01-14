@@ -18,6 +18,7 @@
 #
 
 load_helper epm-sh-altlinux
+load_helper epm-sh-repo
 
 epm_repolist_help()
 {
@@ -110,7 +111,7 @@ __print_apt_sources_list_verbose_full()
 
 print_apt_sources_list()
 {
-    local LISTS='/etc/apt/sources.list /etc/apt/sources.list.d/*.list'
+    local LISTS="$APT_ALL_SOURCES_LIST"
 
     local flagall=''
     local flagregex=''

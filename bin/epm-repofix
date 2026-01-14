@@ -18,12 +18,13 @@
 #
 
 load_helper epm-query
+load_helper epm-sh-repo
 
 
 __replace_text_in_alt_repo()
 {
     local i
-    for i in /etc/apt/sources.list /etc/apt/sources.list.d/*.list ; do
+    for i in $APT_ALL_SOURCES_LIST ; do
         [ -s "$i" ] || continue
         # TODO: don't change file if untouched
         #grep -q -- "$1" "$i" || continue
@@ -284,8 +285,8 @@ case $BASEDISTRNAME in
         [ -n "$quiet" ] || docmd epm repo list
         assure_root
 
-        __fix_alt_sources_list /etc/apt/sources.list
-        __fix_alt_sources_list /etc/apt/sources.list.d/*.list
+        __fix_alt_sources_list $APT_SOURCES_LIST
+        __fix_alt_sources_list $APT_SOURCES_LIST_D/*.list
 
         [ -n "$quiet" ] || docmd epm repo list
         return

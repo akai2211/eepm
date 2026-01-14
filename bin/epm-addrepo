@@ -18,6 +18,7 @@
 #
 
 load_helper epm-sh-altlinux
+load_helper epm-sh-repo
 
 ETERSOFTPUBURL=http://download.etersoft.ru/pub
 ALTLINUXPUBURL=http://ftp.altlinux.org/pub/distributions
@@ -417,7 +418,7 @@ __epm_addrepo_altlinux()
 
     # when add correct sources.list string
     if echo "$repo" | grep -q "^rpm " ; then
-        __epm_addrepo_to_file /etc/apt/sources.list "$repo"
+        __epm_addrepo_to_file $APT_SOURCES_LIST "$repo"
         return
     fi
 
@@ -482,7 +483,7 @@ __epm_addrepo_astra()
             ;;
     esac
 
-    __epm_addrepo_to_file /etc/apt/sources.list "$repo"
+    __epm_addrepo_to_file $APT_SOURCES_LIST "$repo"
     return
 }
 
@@ -538,11 +539,11 @@ __epm_addrepo_deb()
         # FIXME: quotes in showcmd/sudocmd
         showcmd apt-add-repository "$repo"
         sudorun apt-add-repository "$repo"
-        info "Check file /etc/apt/sources.list if needed"
+        info "Check file $APT_SOURCES_LIST if needed"
         return
     else
-        warning "apt-add-repository is not installed, use file /etc/apt/sources.list directly"
-        __epm_addrepo_to_file /etc/apt/sources.list "$repo"
+        warning "apt-add-repository is not installed, use file $APT_SOURCES_LIST directly"
+        __epm_addrepo_to_file $APT_SOURCES_LIST "$repo"
     fi  
 
 }
@@ -577,7 +578,7 @@ case $PMTYPE in
         __epm_addrepo_deb "$@"
         ;;
     aptitude-dpkg)
-        info "You need manually add repo to /etc/apt/sources.list (TODO)"
+        info "You need manually add repo to $APT_SOURCES_LIST (TODO)"
         ;;
     yum-rpm)
         assure_exists yum-utils

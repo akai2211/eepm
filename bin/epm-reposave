@@ -18,6 +18,7 @@
 #
 
 load_helper epm-sh-altlinux
+load_helper epm-sh-repo
 
 
 # under root only
@@ -29,7 +30,7 @@ __save_alt_repo_lists()
     local i
     rm -rf $verbose $SAVELISTDIR 2>/dev/null
     mkdir -p $SAVELISTDIR/apt/ $SAVELISTDIR/apt/sources.list.d/
-    for i in /etc/apt/sources.list /etc/apt/sources.list.d/*.list ; do
+    for i in $APT_ALL_SOURCES_LIST ; do
         [ -s "$i" ] || continue
         local DD="$(echo "$i" | sed -e "s|/etc|$SAVELISTDIR|")"
         cp -af $verbose "$i" "$DD" || fatal 'Can'\''t save apt source list files to $SAVELISTDIR'
