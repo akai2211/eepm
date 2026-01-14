@@ -59,6 +59,21 @@ __print_apt_sources_list_full()
     return $res
 }
 
+__print_apt_sources_list_disabled()
+{
+    local grepflags="$1"
+    local regexp="$2"
+    shift 2
+    local i
+    local res=1
+    [ -n "$regexp" ] || res=0
+    for i in $@ ; do
+        test -r "$i" || continue
+        grep -- "^[[:space:]]*#[[:space:]]*rpm" $i
+    done | grep -v -- "^ *\$" | grep $grepflags "$regexp" && res=0
+    return $res
+}
+
 # TODO: remove
 # print lists with active values
 __print_apt_sources_list_list()
@@ -109,26 +124,27 @@ __print_apt_sources_list_verbose_full()
     return $res
 }
 
+__print_apt_sources_list_verbose_disabled()
+{
+    local grepflags="$1"
+    local regexp="$2"
+    shift 2
+    local i
+    local res=1
+    [ -n "$regexp" ] || res=0
+    for i in $@ ; do
+        test -r "$i" || continue
+        grep -- "^[[:space:]]*#[[:space:]]*rpm" $i | grep -v -- "^ *\$" | grep -q . && __info_cyan "$i:" || continue
+        grep -- "^[[:space:]]*#[[:space:]]*rpm" $i | grep -v -- "^ *\$" | sed -e 's|^|    |' | grep $grepflags --color "$regexp" && res=0
+    done
+    return $res
+}
+
 print_apt_sources_list()
 {
     local LISTS="$APT_ALL_SOURCES_LIST"
-
-    local flagall=''
-    local flagregex=''
-    while [ -n "$1" ] ; do
-        case "$1" in
-            -a|--all)
-                flagall=1
-                ;;
-            --regex)
-                flagregex=1
-                ;;
-            *)
-                break
-                ;;
-        esac
-        shift
-    done
+    # flagall, flagdisabled, regexp are set by epm_repolist()
+    local flagregex="$regexp"
 
     local wc="$*"
     local grepflags=""
@@ -152,6 +168,15 @@ print_apt_sources_list()
         return
     fi
 
+    if [ -n "$flagdisabled" ] ; then
+        if [ -n "$quiet" ] ; then
+            __print_apt_sources_list_disabled "$grepflags" "$wc" $LISTS
+        else
+            __print_apt_sources_list_verbose_disabled "$grepflags" "$wc" $LISTS
+        fi
+        return
+    fi
+
     if [ -n "$quiet" ] ; then
         __print_apt_sources_list "$grepflags" "$wc" $LISTS
     else
@@ -163,16 +188,30 @@ print_apt_sources_list()
 epm_repolist()
 {
 
-case "$1" in
-    -h|--help)            # HELPOPT: show this help
-        epm_repolist_help
-        return
-        ;;
-    -a|--all)             # HELPOPT: show all repos (including disabled/commented)
-        ;;
-    --regex)              # HELPOPT: use pattern as raw regex (no glob conversion)
-        ;;
-esac
+flagall=''
+flagdisabled=''
+
+while [ -n "$1" ] ; do
+    case "$1" in
+        -h|--help)            # HELPOPT: show this help
+            epm_repolist_help
+            return
+            ;;
+        -a|--all)             # HELPOPT: show all repos (including disabled/commented)
+            flagall=1
+            ;;
+        -d|--disabled)        # HELPOPT: show only disabled (commented) repos
+            flagdisabled=1
+            ;;
+        --regex|--regexp)     # HELPOPT: use pattern as raw regex (no glob conversion)
+            # handled globally in epm via $regexp variable
+            ;;
+        *)
+            break
+            ;;
+    esac
+    shift
+done
 
 # TODO
 [ -z "$*" ] || [ "$PMTYPE" = "apt-rpm" ] || [ "$PMTYPE" = "apm-rpm" ] || [ "$PMTYPE" = "apt-dpkg" ] || fatal "No arguments are allowed here"
