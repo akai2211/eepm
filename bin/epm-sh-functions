@@ -90,6 +90,52 @@ restore_color()
     } | $USETTY
 }
 
+# Check if terminal supports OSC 8 hyperlinks (cached)
+is_osc8_supported()
+{
+    # Return cached result
+    [ -n "$__OSC8_SUPPORTED" ] && return 0
+    [ -n "$__OSC8_NOT_SUPPORTED" ] && return 1
+    # Check terminal
+    if [ -z "$USETTY" ] ; then
+        __OSC8_NOT_SUPPORTED=1 ; return 1
+    fi
+    # VTE-based terminals (GNOME Terminal, Tilix, etc.)
+    if [ -n "$VTE_VERSION" ] && [ "$VTE_VERSION" -ge 5000 ] 2>/dev/null ; then
+        __OSC8_SUPPORTED=1 ; return 0
+    fi
+    # iTerm2
+    [ "$TERM_PROGRAM" = "iTerm.app" ] && { __OSC8_SUPPORTED=1 ; return 0 ; }
+    # Windows Terminal
+    [ -n "$WT_SESSION" ] && { __OSC8_SUPPORTED=1 ; return 0 ; }
+    # Konsole
+    [ -n "$KONSOLE_VERSION" ] && { __OSC8_SUPPORTED=1 ; return 0 ; }
+    # kitty
+    [ -n "$KITTY_WINDOW_ID" ] && { __OSC8_SUPPORTED=1 ; return 0 ; }
+    # foot
+    { [ "$TERM" = "foot" ] || [ "$TERM" = "foot-extra" ] ; } && { __OSC8_SUPPORTED=1 ; return 0 ; }
+    # WezTerm
+    [ "$TERM_PROGRAM" = "WezTerm" ] && { __OSC8_SUPPORTED=1 ; return 0 ; }
+    __OSC8_NOT_SUPPORTED=1
+    return 1
+}
+
+# Make clickable link: make_osc8_link URL [TEXT]
+# If TEXT is omitted, URL is used as text
+# Without OSC 8 support: "TEXT (URL)" or just "URL" if no text
+make_osc8_link()
+{
+    local url="$1"
+    local text="$2"
+    if is_osc8_supported ; then
+        printf '\033]8;;%s\033\\%s\033]8;;\033\\' "$url" "${text:-$url}"
+    elif [ -n "$text" ] ; then
+        printf '%s (%s)' "$text" "$url"
+    else
+        printf '%s' "$url"
+    fi
+}
+
 echover()
 {
     [ -z "$verbose" ] && return
@@ -371,7 +417,10 @@ message()
 __promo_message()
 {
     local PROMOMESSAGE="$EPMPROMOMESSAGE"
-    [ -n "$PROMOMESSAGE" ] || PROMOMESSAGE=" (you can discuss this problem (epm $EPMVERSION on $DISTRNAME/$DISTRVERSION) in Telegram: https://t.me/useepm)"
+    if [ -z "$PROMOMESSAGE" ] ; then
+        local tg_link=$(make_osc8_link "https://t.me/useepm")
+        PROMOMESSAGE=" (you can discuss this problem (epm $EPMVERSION on $DISTRNAME/$DISTRVERSION) in Telegram: $tg_link)"
+    fi
     echo "$PROMOMESSAGE"
 }
 
