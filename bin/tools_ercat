@@ -108,7 +108,6 @@ for f in "$@" ; do
     TYPE=$(get_archive_ext "$f") || TYPE=$(is_plain_text "$f") || { warning "Skipping unrecognized $f" ; continue ; }
     case $TYPE in
         gz)
-            # TODO: move pigz support to patool when it supports stdout output
             if is_command pigz ; then
                 regular_unpack "$f" pigz pigz -dc
             else
@@ -116,10 +115,18 @@ for f in "$@" ; do
             fi
             ;;
         bz2)
-            regular_unpack "$f" bzcat bzip2
+            if is_command pbzip2 ; then
+                regular_unpack "$f" pbzip2 pbzip2 -dc
+            else
+                regular_unpack "$f" bzcat bzip2
+            fi
             ;;
         xz)
-            regular_unpack "$f" xzcat xz
+            if is_command pixz ; then
+                docmd pixz -d < "$f"
+            else
+                regular_unpack "$f" xzcat xz
+            fi
             ;;
         Z|compress)
             regular_unpack "$f" zcat gzip
