@@ -554,7 +554,7 @@ epm_install_files()
 epm_install()
 {
     if [ "$BASEDISTRNAME" = "alt" ] ; then
-        if tasknumberprefix $pkg_names; then
+        if is_taskarg $pkg_names; then
             load_helper epm-install-alt
             if [ -n "$interactive" ] ; then
                 confirm_info 'You are about to install $pkg_names task(s) from https://git.altlinux.org.'

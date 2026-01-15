@@ -242,7 +242,7 @@ __epm_download_alt()
     load_helper epm-installed
 
     # TODO: enable if install --download-only will works
-    if tasknumber "$@" >/dev/null ; then
+    if is_taskarg "$@" ; then
         load_helper epm-addrepo
         load_helper epm-reposave
         load_helper epm-removerepo

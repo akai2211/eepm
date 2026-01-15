@@ -340,7 +340,7 @@ epm_remove()
 
     if [ "$BASEDISTRNAME" = "alt" ] ; then
         load_helper epm-sh-altlinux
-        if tasknumber "$pkg_names" >/dev/null ; then
+        if is_taskarg "$pkg_names" ; then
             pkg_names="$(get_task_packages $pkg_names)"
         fi
     fi

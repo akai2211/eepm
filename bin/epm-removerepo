@@ -90,9 +90,11 @@ __epm_removerepo_alt()
     local repo="$*"
     [ -n "$repo" ] || fatal "No such repo or task. Use epm repo remove <regexp|autoimports|archive|tasks|TASKNUMBER>"
 
-    if tasknumber "$repo" >/dev/null ; then
-        local tn
-        for tn in $(tasknumber "$repo") ; do
+    if is_taskarg $repo ; then
+        local arg tn
+        for arg in $repo ; do
+            is_taskarg "$arg" || continue
+            tn=$(get_tasknumber_from_arg "$arg")
             __epm_removerepo_alt_grepremove " repo/$tn/" "/tasks/$tn " "/$tn[ /]build/repo"
         done
         return

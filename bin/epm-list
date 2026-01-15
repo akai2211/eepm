@@ -69,7 +69,7 @@ epm_list()
         *)
             # check if it's a task number (e.g., 404628 or task/404628)
             load_helper epm-sh-altlinux
-            if tasknumberprefix "$option" ; then
+            if is_taskarg "$option" ; then
                 local task="$(get_tasknumber_from_arg "$option")"
                 [ -n "$task" ] || fatal "Can't extract task number from '$option'"
                 get_task_packages "$task"

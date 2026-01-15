@@ -85,7 +85,7 @@ epm_upgrade()
 
     if [ "$BASEDISTRNAME" = "alt" ] ; then
         load_helper epm-sh-altlinux
-        if tasknumber "$@" >/dev/null ; then
+        if is_taskarg "$@" ; then
             epm_upgrade_alt_tasks "$@"
             return
         fi
