@@ -114,7 +114,8 @@ epm_packages()
         "")
             ;;
         *)
-            fatal 'Unknown option $1. Use epm packages --help to get help.'
+            opt="$1"
+            fatal 'Unknown option $opt. Use epm packages --help to get help.'
     esac
 
 case $PMTYPE in

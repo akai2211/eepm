@@ -457,7 +457,8 @@ epm_install_files()
         epm_install_names $files
         return
     elif is_dirpath "$1" && [ ! -f "$1" ] ; then
-        fatal "Can't install non-existent file '$1'"
+        file="$1"
+        fatal 'Can not install non-existent file $file'
     fi
 
     # TODO: check read permissions
