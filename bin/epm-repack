@@ -259,17 +259,32 @@ __epm_repack()
 }
 
 
-__epm_repack_if_needed()
+epm_repack_help()
 {
-    # return 1 if there is a package in host package format
-    __epm_split_by_pkg_type $PKGFORMAT "$@" && return 1
-
-    __epm_repack "$@"
-    return 0
+    message "epm repack - repack packages to native format"
+    message "Usage: epm repack [options] <package files>"
+    message ""
+    message "Options:"
+    message "  --install              install repacked packages"
+    message "  --check-repack-rule    warn if there is a repack rule for the package"
 }
 
 epm_repack()
 {
+    local opt
+    for opt in $pkg_options ; do
+        case "$opt" in
+            -h|--help)
+                epm_repack_help
+                return
+                ;;
+            --check-repack-rule)
+                __epm_check_if_needed_repack $pkg_files
+                return
+                ;;
+        esac
+    done
+
     # if possible, it will put pkg_urls into pkg_files and reconstruct pkg_filenames
     if [ -n "$pkg_urls" ] ; then
         load_helper epm-download
