@@ -27,11 +27,6 @@ epm_install_files_apt_dpkg()
         DPKGOPTIONS="--force-confdef --force-confold"
     fi
 
-    if __epm_repack_if_needed $files ; then
-        [ -n "$repacked_pkgs" ] || fatal 'Can'\''t convert $files'
-        files="$repacked_pkgs"
-    fi
-
     if [ -n "$save_only" ] ; then
         echo
         cp -v $files "$EPMCURDIR"

@@ -22,11 +22,6 @@ epm_install_files_rpm()
     local files="$*"
     [ -z "$files" ] && return
 
-    if __epm_repack_if_needed $files ; then
-        [ -n "$repacked_pkgs" ] || fatal 'Can'\''t convert $files'
-        files="$repacked_pkgs"
-    fi
-
     if [ -n "$save_only" ] ; then
         echo
         cp -v $files "$EPMCURDIR"

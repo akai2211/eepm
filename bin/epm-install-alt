@@ -57,12 +57,6 @@ epm_install_files_alt()
 
     __epm_print_warning_for_nonalt_packages $files
 
-    # do repack if needed
-    if __epm_repack_if_needed $files ; then
-        [ -n "$repacked_pkgs" ] || fatal 'Can'\''t convert $files'
-        files="$repacked_pkgs"
-    fi
-
     if [ -n "$save_only" ] ; then
         echo
         cp -v $files "$EPMCURDIR"
@@ -85,10 +79,8 @@ epm_install_files_alt()
 
     __epm_check_if_src_rpm $files
 
-    if [ -z "$repacked_pkgs" ] ; then
-        __epm_check_vendor $files
-        __epm_check_if_needed_repack $files
-    fi
+    __epm_check_vendor $files
+    epm repack --check-repack-rule $files
 
     # --replacepkgs: Install the Package Even If Already Installed
     local replacepkgs="$(__epm_get_replacepkgs $files)"

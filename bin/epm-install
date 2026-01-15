@@ -22,7 +22,6 @@ load_helper epm-sh-install
 load_helper epm-sh-backend
 load_helper epm-query
 load_helper epm-assure
-load_helper epm-repack
 load_helper epm-requires
 load_helper epm-check_updated_repo
 load_helper epm-sh-warmup
@@ -438,6 +437,9 @@ epm_install_files()
         fatal 'Can not install non-existent file $file'
     fi
 
+    # repack and install if there are packages not in native format
+    __epm_repack_if_needed $files && return
+
     case "$BASEDISTRNAME" in
         "alt")
             load_helper epm-install-alt
@@ -625,8 +627,8 @@ epm_install()
 
     if [ -n "$repack" ] ; then
         # repack binary files if asked
-        __epm_repack $files || return
-        files="$repacked_pkgs"
+        epm repack --install $files
+        return
     fi
 
     epm_install_files $files

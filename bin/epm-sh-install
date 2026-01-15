@@ -171,3 +171,15 @@ __epm_check_vendor()
     done
 }
 
+# Check if all packages are in native format, repack and install if not
+# Returns 1 if no repack needed, otherwise exec to epm repack --install
+__epm_repack_if_needed()
+{
+    local f
+    for f in "$@" ; do
+        [ "$(get_package_type "$f")" = "$PKGFORMAT" ] && continue
+        docmd exec epm repack --install "$@"
+    done
+    return 1
+}
+
