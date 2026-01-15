@@ -114,10 +114,11 @@ get_pao_url()
 query_altlinux_url()
 {
     local URL
+    local pkg="$1"
     case $PMTYPE in
         *-rpm)
-            local srpm=$(print_srcname "$1")
-            [ -n "$srpm" ] || fatal 'Can'\''t get source name for $1'
+            local srpm=$(print_srcname "$pkg")
+            [ -n "$srpm" ] || fatal 'Can'\''t get source name for $pkg'
             echo "$(get_pao_url)/$srpm"
             return
             ;;

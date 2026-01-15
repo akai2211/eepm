@@ -839,8 +839,9 @@ eget()
 
 fetch_url()
 {
-    info "Fetching $1 ..."
-    eget -q -O- "$1"
+    local url="$1"
+    info 'Fetching $url ...'
+    eget -q -O- "$url"
 }
 
 # FIXME:
@@ -917,13 +918,14 @@ parse_json_value()
 # URL/file ["version"]
 get_json_value()
 {
-    if is_url "$1" ; then
+    local src="$1"
+    if is_url "$src" ; then
         local toutput
-        toutput="$(fetch_url "$1")" || return
+        toutput="$(fetch_url "$src")" || return
         echo "$toutput" | parse_json_value "$2"
     else
-        [ -s "$1" ] || fatal "File $1 is missing, can't get JSON"
-        parse_json_value "$2" < "$1"
+        [ -s "$src" ] || fatal 'File $src is missing, can'\''t get JSON'
+        parse_json_value "$2" < "$src"
     fi
 }
 
@@ -946,13 +948,14 @@ parse_json_object_keys()
 # URL/file ["version"]
 get_json_values()
 {
-    if is_url "$1" ; then
+    local src="$1"
+    if is_url "$src" ; then
         local toutput
-        toutput="$(fetch_url "$1")" || return
+        toutput="$(fetch_url "$src")" || return
         echo "$toutput" | parse_json_values "$2"
     else
-        [ -s "$1" ] || fatal "File $1 is missing, can't get JSON"
-        parse_json_values "$2" < "$1"
+        [ -s "$src" ] || fatal 'File $src is missing, can'\''t get JSON'
+        parse_json_values "$2" < "$src"
     fi
 }
 
@@ -1199,9 +1202,10 @@ is_active_systemd()
 
 assure_distr()
 {
+    local distr="$1"
     local TEXT="this option"
     [ -n "$2" ] && TEXT="$2"
-    [ "$DISTRNAME" = "$1" ] || fatal "$TEXT supported only for $1 distro"
+    [ "$DISTRNAME" = "$distr" ] || fatal '$TEXT supported only for $distr distro'
 }
 
 # return delimiter sign in depend of package type

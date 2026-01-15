@@ -105,9 +105,11 @@ get_url_to_etersoft_mirror()
 # "comment" "file"
 __add_to_contents_index_list()
 {
-    [ -n "$verbose" ] && info "Put $1 -> $2"
-    [ -s "$2" ] || return
-    echo "$2" >>$ALT_CONTENTS_INDEX_LIST
+    local comment="$1"
+    local file="$2"
+    [ -n "$verbose" ] && info 'Put $comment -> $file'
+    [ -s "$file" ] || return
+    echo "$file" >>$ALT_CONTENTS_INDEX_LIST
 }
 
 # "comment" file file2
