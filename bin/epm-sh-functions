@@ -1030,6 +1030,19 @@ onefile_eget()
     internal_tools_eget "$@"
 }
 
+# Check if file is a package file (rpm, deb, etc.), not ELF binary or other
+is_package_file()
+{
+    local t
+    t="$(get_package_type "$1")" || return 1
+    case "$t" in
+        ELF|exe|msi|AppImage)
+            return 1
+            ;;
+    esac
+    return 0
+}
+
 # TODO: improve and drop!
 get_package_type()
 {
