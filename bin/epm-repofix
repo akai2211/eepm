@@ -242,20 +242,21 @@ __epm_repochange_alt()
 {
     load_helper epm-repomirrors
 
-    local current_mirror
+    local current_mirror mirror
     current_mirror=$(__get_current_mirror)
+    mirror="$1"
 
-    case "$1" in
+    case "$mirror" in
         "--list")
             __list_mirrors "$current_mirror" "$short"
             ;;
         *)
             local pattern
-            pattern="$(__alt_mirror_change_pattern "$1")"
+            pattern="$(__alt_mirror_change_pattern "$mirror")"
             if [ -n "$pattern" ] ; then
                 __change_repo "$pattern"
             else
-                fatal "Unsupported mirror: $1. Use --list to see available mirrors."
+                fatal 'Unsupported mirror: $mirror. Use --list to see available mirrors.'
             fi
             ;;
     esac

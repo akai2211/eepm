@@ -111,9 +111,10 @@ Examples:
 
 epm_history()
 {
+local option="$1"
 
 if [ $PMTYPE = "apt-rpm" ] || [ $PMTYPE = "apm-rpm" ] ; then
-    case "$1" in
+    case "$option" in
         "-h"|"--help"|"help")      # HELPCMD: help
             epm_history_help
             return
@@ -137,7 +138,7 @@ if [ $PMTYPE = "apt-rpm" ] || [ $PMTYPE = "apm-rpm" ] ; then
         "")
             ;;
         *)
-            fatal "Unknown option $1. Use epm history --help to get help."
+            fatal 'Unknown option $option. Use epm history --help to get help.'
     esac
 fi
 

@@ -679,7 +679,8 @@ case "$1" in
         export EPM_OPTIONS="$EPM_OPTIONS --print-url"
         ;;
     -*)
-        fatal "Unknown option $1"
+        opt="$1"
+        fatal 'Unknown option $opt'
         ;;
      *)
         break

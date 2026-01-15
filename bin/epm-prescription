@@ -61,7 +61,8 @@ case "$1" in
     receipt)              # HELPCMD: run the prescription
         ;;
     -*)
-        fatal "Unknown option $1"
+        opt="$1"
+        fatal 'Unknown option $opt'
         ;;
      *)
         break

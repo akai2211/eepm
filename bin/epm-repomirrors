@@ -275,7 +275,8 @@ epm_repomirrors()
                 opt_speedtest=1
                 ;;
             *)
-                fatal "Unknown option: $1"
+                opt="$1"
+                fatal 'Unknown option: $opt'
                 ;;
         esac
         shift
