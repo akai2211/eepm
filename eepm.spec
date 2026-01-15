@@ -83,6 +83,27 @@ packages from vendor's sites.
 See https://bugzilla.altlinux.org/48465 for
 a discussion about epm play security.
 
+%package full
+Summary: Etersoft EPM package manager (optional useful tools)
+Group: System/Configuration/Packaging
+Requires: %name = %EVR
+# parallel gzip for 3x faster content index decompression (epm sf)
+Requires: pigz
+# fuzzy finder for interactive package selection (epm play, wildcard expansion)
+Requires: fzf
+# fast download utility with parallel connections (epm play, eget)
+Requires: aria2
+
+AutoProv:no
+AutoReq:no
+
+%description full
+This metapackage contains optional but useful dependencies
+for better EPM performance and user experience:
+- pigz: parallel gzip for faster content index search (3x speedup)
+- fzf: fuzzy finder for interactive package selection
+- aria2: fast download utility with parallel connections
+
 %prep
 %setup
 
@@ -155,6 +176,9 @@ EOF
 %dir %_sysconfdir/eepm/play.d/
 %config(noreplace) %_sysconfdir/eepm/play.d/*
 %endif
+
+%files full
+# metapackage, no files
 
 %changelog
 * Fri Jan 09 2026 Vitaly Lipatov <lav@altlinux.ru> 3.64.49-alt1
