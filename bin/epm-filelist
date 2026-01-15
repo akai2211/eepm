@@ -30,6 +30,7 @@ __alt_local_content_filelist()
     load_helper epm-sh-altlinux-contents-index
     load_helper epm-check_updated_repo
 
+    local pkg="$1"
     check_alt_contents_index || init_alt_contents_index
     update_repo_if_needed
     local CI="$(cat $ALT_CONTENTS_INDEX_LIST)"
@@ -40,8 +41,8 @@ __alt_local_content_filelist()
     OUTCMD="cat"
 
     {
-        [ -n "$USETTY" ] && info "Search in $CI for $1..."
-        ercat $CI | grep -h -P -- ".*\t$1$" | sed -e "s|\(.*\)\t\(.*\)|\1|g"
+        [ -n "$USETTY" ] && info 'Search in $CI for $pkg...'
+        ercat $CI | grep -h -P -- ".*\t$pkg$" | sed -e "s|\(.*\)\t\(.*\)|\1|g"
     } | $OUTCMD
 }
 

@@ -44,8 +44,9 @@ __epm_changelog_files()
 {
     [ -z "$*" ] && return
 
+    local pkg="$1"
     # TODO: detect every file
-    case $(get_package_type $1) in
+    case $(get_package_type $pkg) in
         rpm)
             assure_exists rpm
             docmd_foreach "rpm -q -p --changelog" $@
@@ -54,7 +55,7 @@ __epm_changelog_files()
             __epm_changelog_dpkg "$@"
             ;;
         *)
-            fatal 'Have no suitable command for $1 in epm_changelog()'
+            fatal 'Have no suitable command for $pkg in epm_changelog()'
             ;;
     esac
 }

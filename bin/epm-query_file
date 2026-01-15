@@ -36,14 +36,15 @@ __abs_filename()
 __do_query_real_file()
 {
     local TOFILE
-    
+    local file="$1"
+
     # get canonical path
-    if [ -e "$1" ] ; then
-        TOFILE="$(__abs_filename "$1")"
+    if [ -e "$file" ] ; then
+        TOFILE="$(__abs_filename "$file")"
     else
-        TOFILE="$(print_command_path "$1" || echo "$1")"
-        if [ "$TOFILE" = "$1" ] ; then
-            fatal 'File '$TOFILE' is missing in '$PATH
+        TOFILE="$(print_command_path "$file" || echo "$file")"
+        if [ "$TOFILE" = "$file" ] ; then
+            fatal 'File $TOFILE is missing in $PATH'
         else
             # work against usrmerge
             local t="$(realpath "$(dirname "$TOFILE")")/$(basename "$TOFILE")" #"
@@ -51,7 +52,7 @@ __do_query_real_file()
                 #info " > $TOFILE is placed as $t"
                 TOFILE="$t"
             fi
-            info " > $1 is placed as $TOFILE"
+            info ' > $file is placed as $TOFILE'
         fi
     fi
 

@@ -430,6 +430,7 @@ __epm_addrepo_altlinux()
 __epm_addrepo_astra()
 {
     local repo="$*"
+    local distrname="$1"
 
     if [ -z "$repo" ] || [ "$repo" = "--help" ]; then
         message 'Add repo. You can use follow params:
@@ -443,7 +444,7 @@ __epm_addrepo_astra()
 
     # keywords
     # https://wiki.astralinux.ru/pages/viewpage.action?pageId=3276859
-    case "$1-$reponame" in
+    case "$distrname-$reponame" in
         astra-1.7_x86-64)
             # TODO epm repo change http / https
             epm install --skip-installed apt-transport-https ca-certificates || fatal
@@ -477,7 +478,7 @@ __epm_addrepo_astra()
             return
             ;;
         astra-*)
-            fatal 'Unsupported distro version $1-$reponame, see # epm print info output.'
+            fatal 'Unsupported distro version $distrname-$reponame, see # epm print info output.'
             ;;
     esac
 
