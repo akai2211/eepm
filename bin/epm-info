@@ -18,6 +18,7 @@
 #
 
 load_helper epm-query
+load_helper epm-query_file
 
 epm_info_help()
 {
@@ -27,7 +28,8 @@ Usage: epm info [options] <package>'
     echog 'Options:'
     get_help HELPOPT $SHAREDIR/epm-info
     echo ''
-    info 'Without options prints general package information.'
+    echog 'Without options prints general package information.'
+    echog 'If a file path is given, shows info for the package owning that file.'
 }
 
 __epm_info_rpm_low()
@@ -179,6 +181,30 @@ esac
 }
 
 
+__epm_info_convert_to_pkgnames()
+{
+    local f owner
+    pkg_files=
+    pkg_names=
+    for f in $1 ; do
+        if is_package_file "$f" ; then
+            [ -n "$pkg_files" ] && pkg_files="$pkg_files $f" || pkg_files="$f"
+        elif [ -e "$f" ] ; then
+            owner="$(__do_query_real_file "$f")"
+            if [ -n "$owner" ] ; then
+                info 'File $f belongs to package $owner'
+                [ -n "$pkg_names" ] && pkg_names="$pkg_names $owner" || pkg_names="$owner"
+            else
+                warning 'Cannot find package owning $f'
+                return 1
+            fi
+        else
+            [ -n "$pkg_names" ] && pkg_names="$pkg_names $f" || pkg_names="$f"
+        fi
+    done
+    pkg_filenames=$(strip_spaces "$pkg_files $pkg_names")
+}
+
 # TODO: separate to _files and _names parts
 # implement _files part per package, not by PMTYPE (see filelist)
 epm_info()
@@ -240,6 +266,9 @@ epm_info()
         load_helper epm-download
         __handle_pkg_urls_to_checking
     fi
+
+    # convert files/directories to package names
+    __epm_info_convert_to_pkgnames "$pkg_filenames" || exit
 
     if [ -z "$pkg_filenames" ] ; then
         epm_info_help >&2
