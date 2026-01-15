@@ -17,28 +17,24 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-tasknumberprefix() {
-    local potential
-    for potential in "$@"; do
-        # 123456 or 123456/pkg or task/123456 or task/123456/pkg
-        [[ "$potential" =~ ^[0-9]+$ ]] && return 0
-        [[ "$potential" =~ ^[0-9]+/[^/]+$ ]] && return 0
-        [[ "$potential" =~ ^task/[0-9]+(/[^/]+)?$ ]] && return 0
+# Check if any argument is a valid task format: 123456, #123456, 123456/pkg, task/123456, task/123456/pkg
+is_taskarg() {
+    local arg
+    for arg in "$@"; do
+        [[ "$arg" =~ ^[[:space:]]*#?[0-9]+$ ]] && return 0
+        [[ "$arg" =~ ^[0-9]+/[^/]+$ ]] && return 0
+        [[ "$arg" =~ ^task/[0-9]+(/[^/]+)?$ ]] && return 0
     done
     return 1
 }
 
-tasknumber()
-{
-    local num="$(echo "$1" | sed -e "s| *#*||g")"
-    isnumber "$num" && echo "$*"
-}
-
-# Extract task number from various formats: 123456, 123456/pkg, task/123456, task/123456/pkg
+# Extract task number from various formats: 123456, #123456, 123456/pkg, task/123456, task/123456/pkg
 get_tasknumber_from_arg()
 {
     local arg="$1"
     local task=""
+    # strip leading spaces and #
+    arg="$(echo "$arg" | sed -e 's|^ *#*||')"
     case "$arg" in
         task/*/*)
             task=$(printf "%s" "$arg" | cut -d/ -f2)
@@ -64,7 +60,11 @@ get_pkgname_from_taskarg()
         task/*/*)
             printf "%s" "$arg" | cut -d/ -f3
             ;;
-        */*)
+        task/[0-9]*)
+            # task/123456 - no package name
+            ;;
+        [0-9]*/*)
+            # 123456/pkg - first part is task number
             printf "%s" "$arg" | cut -d/ -f2
             ;;
     esac
@@ -105,8 +105,10 @@ get_task_arepo_packages_list()
 
 get_task_packages()
 {
-    local tn
-    for tn in $(tasknumber "$@") ; do
+    local arg tn
+    for arg in "$@" ; do
+        is_taskarg "$arg" || continue
+        tn=$(get_tasknumber_from_arg "$arg")
         get_task_status "$tn" || continue
         get_task_packages_list "$tn"
         [ "$DISTRARCH" = "x86_64" ] || continue
