@@ -12,6 +12,7 @@ PRODUCTDIR=/opt/claude.ai
 cat <<EOF | create_exec_file /usr/bin/$PRODUCT
 #!/bin/sh
 export CLAUDE_CODE_DISABLE_AUTO_UPDATE=1
+export DISABLE_AUTOUPDATER=1
 export CLAUDE_NO_DIAGNOSTICS=1
 exec $PRODUCTDIR/$PRODUCT "\$@"
 EOF
