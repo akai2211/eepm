@@ -276,7 +276,7 @@ tolower()
 
 firstword()
 {
-        echo "$*" | cut -f1 -d" "
+        echo "$*" | awk '{print $1}'
 }
 
 lastword()
@@ -289,7 +289,7 @@ lastword()
 # use for subst complex string with symbols treating as regexp
 sed_escape()
 {
-    echo "$*" | sed -e 's/[]()$*.^|[]/\\&/g'
+    echo "$*" | sed -e 's|[][()$*.^|/]|\\&|g'
 }
 
 
@@ -1263,9 +1263,10 @@ $1"
 # use internal implementation for speed
 has_space()
 {
-        # not for dash:
-        [ "$1" != "${1/ //}" ]
-        # [ "$(echo "$*" | sed -e "s| ||")" != "$*" ]
+        case "$1" in
+            *[[:space:]]*) return 0 ;;
+        esac
+        return 1
 }
 
 
