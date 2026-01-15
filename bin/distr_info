@@ -273,7 +273,7 @@ pkgtype()
 
     case $VENDOR_ID in
         arch|manjaro)
-            echo "pkg.tar.xz" && return
+            echo "pkg.tar.zst" && return
             ;;
         ublinux)
             echo "pkg.tar.zst" && return
@@ -285,7 +285,7 @@ pkgtype()
         freebsd) echo "tbz" ;;
         sunos) echo "pkg.gz" ;;
         slackware|mopslinux) echo "tgz" ;;
-        archlinux|manjaro) echo "pkg.tar.xz" ;;
+        archlinux|manjaro) echo "pkg.tar.zst" ;;
         ublinux) echo "pkg.tar.zst" ;;
         gentoo) echo "tbz2" ;;
         windows) echo "exe" ;;
