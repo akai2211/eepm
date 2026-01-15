@@ -159,6 +159,9 @@ esac
 
 # FIXME: some problems with multibased distros (Server Edition on CentOS and Desktop Edition on Ubuntu)
 case $DISTRIB_ID in
+    AlterOS)
+        CMD="yum-rpm"
+        ;;
     PCLinux)
         CMD="apt-rpm"
         ;;
