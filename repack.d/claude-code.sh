@@ -6,8 +6,14 @@ SPEC="$2"
 
 PRODUCT=claude
 PRODUCTDIR=/opt/claude.ai
+PRODUCTALT="claude-code claude-code-latest"
 
 . $(dirname $0)/common.sh
+
+for i in $PRODUCTALT ; do
+    [ "$i" = "$PKGNAME" ] && continue
+    add_conflicts $i
+done
 
 cat <<EOF | create_exec_file /usr/bin/$PRODUCT
 #!/bin/sh

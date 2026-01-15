@@ -1,12 +1,20 @@
 #!/bin/sh
 
-PKGNAME=claude-code
+BASEPKGNAME=claude-code
 SUPPORTEDARCHES="x86_64 aarch64"
+PRODUCTALT="'' latest"
 VERSION="$2"
 DESCRIPTION="Claude is a next generation AI assistant built by Anthropic"
 URL="https://claude.ai/"
 
 . $(dirname $0)/common.sh
+
+# claude-code uses stable channel, claude-code-latest uses latest channel
+if [ "$PKGNAME" = "$BASEPKGNAME-latest" ] ; then
+    CHANNEL="latest"
+else
+    CHANNEL="stable"
+fi
 
 arch="$(epm print info -a)"
 case "$arch" in
@@ -28,8 +36,8 @@ GCS_BUCKET="$(fetch_url https://claude.ai/install.sh | grep "^GCS_BUCKET=" | sed
 [ -n "$GCS_BUCKET" ] || fatal "Can't download https://claude.ai/install.sh"
 
 if [ "$VERSION" = "*" ] ; then
-    VERSION="$(fetch_url "$GCS_BUCKET/stable")" || fatal "Can't get version from $GCS_BUCKET/stable"
-    [ -n "$VERSION" ] || fatal "Got empty version from $GCS_BUCKET/stable"
+    VERSION="$(fetch_url "$GCS_BUCKET/$CHANNEL")" || fatal "Can't get version from $GCS_BUCKET/$CHANNEL"
+    [ -n "$VERSION" ] || fatal "Got empty version from $GCS_BUCKET/$CHANNEL"
 fi
 
 # ["platforms","linux-x64","checksum"]
