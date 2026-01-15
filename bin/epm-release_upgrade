@@ -300,7 +300,8 @@ __do_upgrade()
     docmd epm $non_interactive $force_yes upgrade && return
     docmd epm $non_interactive $force_yes fix
     docmd epm $non_interactive $force_yes upgrade && return
-    fatal "Check the errors and run '# $0' after fix."
+    local cmd="$0"
+    fatal 'Check the errors and run "# $cmd" after fix.'
 }
 
 # TODO: install new conf without signs?
