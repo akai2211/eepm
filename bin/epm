@@ -656,6 +656,8 @@ check_filenames()
         # files can be with full path or have extension via .
         if [ -f "$opt" ] && rhas "$opt" "[/\.]" ; then
             has_space "$opt" && warning 'There are space(s) in filename $opt, it is not supported. Skipped' && continue
+            # resolve symlinks for correct access check by root
+            opt="$(realpath "$opt" 2>/dev/null)" || continue
             [ -n "$pkg_files" ] && pkg_files="$pkg_files $opt" || pkg_files="$opt"
         elif [ -d "$opt" ] ; then
             has_space "$opt" && warning 'There are space(s) in directory path $opt, it is not supported. Skipped' && continue
@@ -666,6 +668,8 @@ check_filenames()
         # hack, TODO: reasons
         elif is_abs_path "$opt" && ! rhas "$opt" "[()]" ; then
             has_space "$opt" && warning 'There are space(s) in filename $opt, it is not supported. Skipped' && continue
+            # resolve symlinks for correct access check by root
+            opt="$(realpath "$opt" 2>/dev/null)" || continue
             [ -n "$pkg_files" ] && pkg_files="$pkg_files $opt" || pkg_files="$opt"
         else
             has_space "$opt" && warning 'There are space(s) in package name $opt, it is not supported. Skipped.' && continue
