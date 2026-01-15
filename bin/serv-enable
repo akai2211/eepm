@@ -25,7 +25,7 @@ serv_enable()
 {
     local SERVICE="$1"
 
-    is_service_autostart $1 && info "Service $1 is already enabled for startup" && return
+    is_service_autostart $SERVICE && info 'Service $SERVICE is already enabled for startup' && return
 
     case $SERVICETYPE in
         service-chkconfig)
