@@ -30,6 +30,12 @@ __filter_repos_list()
     local i
     [ -z "$*" ] && cat && return
 
+    # Check if this is a full repo line (rpm or deb) - use literal matching for the entire string
+    if echo "$1" | grep -q '^rpm\|^deb' && [ $# -eq 1 ] ; then
+        grep -F -i -- "$1"
+        return
+    fi
+
     local list=""
     local listN=""
     for i in "$@" ; do
