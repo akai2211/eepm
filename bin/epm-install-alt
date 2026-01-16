@@ -17,6 +17,12 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+# Load use_local_repo from environment variable if set
+[ -n "$EPM_USE_LOCAL_REPO" ] && use_local_repo="$EPM_USE_LOCAL_REPO"
+
+# Enable local repo for ALT Atomic systems
+[ "$FULLDISTRNAME" = "ALT Atomic" ] && use_local_repo=1
+
 epm_install_files_alt_via_repo()
 {
     local files="$*"
@@ -63,10 +69,9 @@ epm_install_files_alt()
         return
     fi
 
-    # install packages via apm on ALT Atomic
-    #if [ "$PMTYPE" = "apm-rpm" ] ; then
-    if [ "$FULLDISTRNAME" = "ALT Atomic" ] ; then
-        [ -n "$nodeps" ] || fatal "Option --nodeps is not supported in apm"
+    # install packages via local repo if enabled
+    if [ -n "$use_local_repo" ] ; then
+        [ -n "$nodeps" ] && fatal "Option --nodeps is not supported with local repo"
         epm_install_files_alt_via_repo $files
         return
     fi
