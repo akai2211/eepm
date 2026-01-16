@@ -10,9 +10,9 @@ URL="https://www.pfu.ricoh.com/global/scanners/fi/dl/agree/ubuntu-64-221-sp.html
 
 warn_version_is_not_supported
 
-VERSION=2.2.1
+VERSION=2.2.2
 
 # check URL to upgrade the version
-PKGURL="https://origin.pfultd.com/downloads/IMAGE/driver/ubuntu/221/pfusp-ubuntu_2.2.1_amd64.deb"
+PKGURL="https://origin.pfultd.com/downloads/IMAGE/driver/ubuntu/222/pfusp-ubuntu_2.2.2_amd64.deb"
 
 install_pkgurl
