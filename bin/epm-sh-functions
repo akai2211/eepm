@@ -111,7 +111,7 @@ showcmd()
         set_boldcolor $GREEN
         local PROMTSIG="\$"
         is_root && PROMTSIG="#"
-        echo " $PROMTSIG $*"
+        echo " $PROMTSIG $*" | tr '\t' ' '
         restore_color
     fi >&2
 }
