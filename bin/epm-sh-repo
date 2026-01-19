@@ -66,5 +66,5 @@ __filter_repos_list()
         result="$(echo "$result" | grep -E -i -- "$i")"
     done
 
-    echo "$result"
+    [ -n "$result" ] && echo "$result"
 }
