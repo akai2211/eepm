@@ -71,7 +71,7 @@ epm_install_files_alt()
 
     # install packages via local repo if enabled
     if [ -n "$use_local_repo" ] ; then
-        [ -n "$nodeps" ] && fatal "Option --nodeps is not supported with local repo"
+        [ -n "$nodeps" ] && warning "Option --nodeps is not supported with local repo, ignored"
         epm_install_files_alt_via_repo $files
         return
     fi
