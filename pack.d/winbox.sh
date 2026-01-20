@@ -20,4 +20,12 @@ PKGNAME=$PRODUCT-$VERSION
 
 erc pack $PKGNAME.tar opt || fatal
 
+# fix version for rpm: 4.0beta47 -> 4.0~beta47 (so 4.0 > 4.0~beta47)
+RPMVERSION=$(echo "$VERSION" | sed 's/beta/~beta/')
+
+cat <<EOF >$PKGNAME.tar.eepm.yaml
+name: $PRODUCT
+version: $RPMVERSION
+EOF
+
 return_tar $PKGNAME.tar

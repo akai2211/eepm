@@ -171,7 +171,7 @@ __prepare_source_package()
     # they will fill $returntarname
 
     if __check_packrule "$alpkg" ; then
-        __epm_pack_run_handler ${__PACKRULE} "$pkg"
+        __epm_pack_run_handler ${__PACKRULE} "$pkg" "$pkgversion" "$pkg_urls_downloaded"
     elif rihas "$alpkg" "\.AppImage$" ; then
         # big hack with $pkg_urls_downloaded (it can be a list, not a single url)
         __epm_pack_run_handler generic-appimage "$pkg" "$pkgversion" "$pkg_urls_downloaded"
