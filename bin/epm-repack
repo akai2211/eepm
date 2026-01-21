@@ -296,6 +296,7 @@ epm_repack()
     [ -z "$pkg_files" ] && info "Empty repack list was skipped" && return 22
     if __epm_repack $pkg_files && [ -n "$repacked_pkgs" ] ; then
         if [ -n "$install" ] ; then
+            [ "$allow_repack_install" = "0" ] && fatal "Installing repacked packages is forbidden by allow_repack_install=0 in $CONFIGDIR/eepm.conf"
             epm install $repacked_pkgs
             return
         fi
