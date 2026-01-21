@@ -3,6 +3,5 @@
     "version": "1.0.0",
     "installed": false,
     "dependencies": [ "cosmic-session" ],
-    "description": "COSMIC desktop environment",
-    "metapackages": [ "cosmic-session" ]
+    "description": "COSMIC desktop environment"
 }
