@@ -286,6 +286,7 @@ epm_desktop_help()
     message '
 Examples:
   epm desktop install kde
+  epm desktop install kde=small
 '
 }
 
