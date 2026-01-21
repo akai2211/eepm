@@ -933,6 +933,15 @@ parse_json_values()
     epm --inscript --quiet tool json -b | grep "^$field" | sed -e 's|.*\][[:space:]]||' | sed -e 's|"\(.*\)"|\1|g'
 }
 
+# get keys of JSON object (not array)
+# stdin: JSON, arg: object name
+# example: parse_json_object_keys metapackage_variants < file.json
+parse_json_object_keys()
+{
+    local field="$1"
+    epm --inscript --quiet tool json -b | grep "^\[\"$field\"," | sed -e 's|^\[\"[^\"]*\",\"\([^\"]*\)\"\].*|\1|'
+}
+
 # URL/file ["version"]
 get_json_values()
 {
