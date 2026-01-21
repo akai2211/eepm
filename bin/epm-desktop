@@ -124,9 +124,34 @@ is_de_installed()
 }
 
 
+# args: de_name
+get_available_variants()
+{
+    local de_name="$1"
+    parse_json_object_keys metapackage_variants < "$(get_json $de_name)" | xargs
+}
+
+# args: de_name [variant]
 install_de_meta()
 {
-    local metapackages="$(get_values "$de_name" "metapackages")"
+    local de_name="$1"
+    local variant="$2"
+    local metapackages
+
+    if [ -n "$variant" ] ; then
+        # get metapackage from metapackage_variants using JSON path
+        metapackages="$(get_json_value "$(get_json $de_name)" '["metapackage_variants","'$variant'"]')"
+        if [ -z "$metapackages" ] ; then
+            local available="$(get_available_variants "$de_name")"
+            if [ -z "$available" ] ; then
+                fatal "$de_name does not support variants"
+            else
+                fatal "Unknown variant '$variant' for $de_name. Available variants: $available"
+            fi
+        fi
+    else
+        metapackages="$(get_values "$de_name" "metapackages")"
+    fi
 
     # silent skip missed metapackages
     [ -n "$metapackages" ] || return 0
@@ -136,9 +161,11 @@ install_de_meta()
 }
 
 
+# args: de_name [variant]
 install_de()
 {
     local de_name="$1"
+    local variant="$2"
 
     if [ -z "$force" ] && is_de_installed $de_name ; then
         message "$de_name is already installed."
@@ -147,9 +174,13 @@ install_de()
 
     local dependencies="$(get_values "$de_name" "dependencies")"
 
-    message "Installing $de_name with dependencies: $dependencies"
+    if [ -n "$variant" ] ; then
+        message "Installing $de_name ($variant) with dependencies: $dependencies"
+    else
+        message "Installing $de_name with dependencies: $dependencies"
+    fi
 
-    if ! install_de_meta ; then
+    if ! install_de_meta "$de_name" "$variant" ; then
         fatal "Failed to install metapackage(s) for $de_name."
     fi
 
@@ -202,11 +233,13 @@ get_de_info()
         return
     fi
 
+    local variants="$(get_available_variants "$de_name")"
     message "Information for $de_name:
     Name: $(get_value $de_name name)
     Version: $version
     Installed: $installed
     Description: $(get_value $de_name description)"
+    [ -n "$variants" ] && message "    Variants: $variants"
 }
 
 
@@ -277,9 +310,16 @@ epm_desktop()
             epm_desktop_help
             return
             ;;
-        install)                      # HELPCMD: <de_name>   Install a desktop environment
-            check_if_de_exists "$1"
-            install_de "$1"
+        install)                      # HELPCMD: <de_name>[=variant]   Install a desktop environment
+            local de_arg="$1"
+            local de_name="${de_arg%%=*}"
+            local variant=""
+            # parse de=variant
+            if [ "$de_arg" != "$de_name" ] ; then
+                variant="${de_arg#*=}"
+            fi
+            check_if_de_exists "$de_name"
+            install_de "$de_name" "$variant"
             ;;
         remove)                       # HELPCMD: <de_name>   Remove a desktop environment
             check_if_de_exists "$1"
