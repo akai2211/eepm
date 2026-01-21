@@ -576,7 +576,7 @@ epm_install()
     fi
 
     if [ -n "$manual_requires" ] ; then
-        local pkg_names="$pkg_names $(short=1 epm_requires $pkg_names)"
+        local pkg_names="$pkg_names $(docmd epm requires --short $pkg_names)"
     fi
 
     if [ -n "$show_command_only" ] ; then

@@ -132,7 +132,7 @@ install_de_meta()
     [ -n "$metapackages" ] || return 0
 
     # we really want mark all installed packages as manually installed?
-    epm install --manual-requires $metapackages
+    docmd epm install --manual-requires $metapackages
 }
 
 
@@ -153,7 +153,7 @@ install_de()
         fatal "Failed to install metapackage(s) for $de_name."
     fi
 
-    if ! epm install $dependencies ; then
+    if ! docmd epm install $dependencies ; then
         fatal "Failed to install $de_name."
     fi
 
@@ -177,7 +177,7 @@ remove_de()
     message "Removing $de_name with dependencies: $dependencies"
 
     # We hope that metapackages will removed by dependency
-    if ! epm remove $dependencies ; then
+    if ! docmd epm remove $dependencies ; then
         fatal "Failed to remove $de_name."
     fi
 
