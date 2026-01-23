@@ -146,6 +146,34 @@ get_current_kernel_flavour()
     echo "$rflv"
 }
 
+# extract kernel flavour from package name
+# kernel-image-6.12 -> 6.12
+# kernel-image-std-def -> std-def
+# kernel-image-6.12.10-6.12-alt1 -> 6.12
+# kernel-image-5.10.123-std-def-alt1 -> std-def
+get_flavour_from_kernel_package()
+{
+    local pkg="$1"
+    # remove kernel-image- prefix if present
+    pkg="${pkg#kernel-image-}"
+
+    # if just flavour (no dots or single segment like "std-def" or "6.12")
+    case "$pkg" in
+        *-*-alt*)
+            # full version like 6.12.10-6.12-alt1 or 5.10.123-std-def-alt1
+            # extract flavour using same logic as get_current_kernel_flavour
+            local flv
+            flv="${pkg#*-}"   # 6.12-alt1 or std-def-alt1
+            flv="${flv%-*}"   # 6.12 or std-def
+            echo "$flv"
+            ;;
+        *)
+            # short form: 6.12 or std-def
+            echo "$pkg"
+            ;;
+    esac
+}
+
 # std-def 1.2.3-alt1 -> 1.2.3-std-def-alt1
 make_kernel_release()
 {
