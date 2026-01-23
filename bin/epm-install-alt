@@ -276,6 +276,7 @@ epm_install_alt_kernel_module()
 epm_install_alt_names()
 {
     local kmlist=''
+    local kilist=''
     local installnames=''
 
     while [ -n "$1" ] ; do
@@ -292,6 +293,11 @@ epm_install_alt_names()
             else
                 kmlist="$kmlist $kmn"
             fi
+        elif echo "$pkgname" | grep -v "#" | grep -q "^kernel-image-" ; then
+            # kernel-image-6.12 or kernel-image-std-def or full kernel-image-6.12.10-6.12-alt1
+            local flavour
+            flavour="$(get_flavour_from_kernel_package "$pkgname")"
+            kilist="$kilist $flavour"
         else
             installnames="$installnames $pkgname"
         fi
@@ -300,6 +306,12 @@ epm_install_alt_names()
 
     epm_install_names $installnames || return
     epm_install_alt_kernel_module $kmlist || return
+
+    # install kernel images via update-kernel (handles modules automatically)
+    local flavour
+    for flavour in $kilist ; do
+        docmd epm update-kernel -t "$flavour" || return
+    done
 }
 
 # Unused hack for apt-repo
