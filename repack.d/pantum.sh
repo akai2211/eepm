@@ -8,12 +8,14 @@ PRODUCT=pantum
 
 . $(dirname $0)/common.sh
 
-if [ "$(epm print info -b)" = "64" ] ; then
+if [ -d "$BUILDROOT/usr/lib/sane" ] ; then
+    mkdir -p "$BUILDROOT/usr/lib64/sane"
+    for f in "$BUILDROOT/usr/lib/sane/"* ; do
+        [ -e "$f" ] || continue
+        name="$(basename "$f")"
+        move_file "/usr/lib/sane/$name" "/usr/lib64/sane/$name"
+    done
     remove_dir /usr/lib/sane
-    # keep /usr/lib64
-else
-    remove_dir /usr/lib64/sane
-    # keep /usr/lib
 fi
 
 if [ "$(epm print info -p)" = "rpm" ] ; then
@@ -29,4 +31,3 @@ remove_dir /usr/lib/x86_64-linux-gnu
 
 # duplicates main files
 remove_dir /usr/local
-
