@@ -53,10 +53,17 @@ erc unpack $PKGNAME.deb || fatal
 rm katusha*.deb
 cd katusha*
 
-mv usr/lib/x86_64-linux-gnu/sane usr/lib/
+SANELIB=usr/lib64/sane
+[ -d /usr/lib/x86_64-linux-gnu ] && SANELIB=usr/lib/x86_64-linux-gnu/sane
+
+mkdir -p "$SANELIB"
+if [ -d usr/lib/x86_64-linux-gnu/sane ] && [ "$SANELIB" != "usr/lib/x86_64-linux-gnu/sane" ] ; then
+    mv usr/lib/x86_64-linux-gnu/sane/* "$SANELIB/"
+    rmdir usr/lib/x86_64-linux-gnu/sane
+fi
 rm -r usr/lib/x86_64-linux-gnu
 
-pushd usr/lib/sane/
+pushd "$SANELIB"
 ln -s libsane-katusham247.so.1.0.27 libsane-katusham247.so
 ln -s libsane-katusham247.so.1.0.27 libsane-katusham247.so.1
 rm libsane-katusham247.la
