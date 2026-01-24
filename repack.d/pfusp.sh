@@ -50,3 +50,13 @@ cat <<EOF | create_file /opt/pfusp/etc/simple-scan.conf
 PAPER_SIZE=0
 EOF
 
+# Keep RPM sane drivers in /usr/lib64/sane.
+if [ -d "$BUILDROOT/usr/lib/sane" ] ; then
+    mkdir -p "$BUILDROOT/usr/lib64/sane"
+    for f in "$BUILDROOT/usr/lib/sane/"* ; do
+        [ -e "$f" ] || continue
+        name="$(basename "$f")"
+        move_file "/usr/lib/sane/$name" "/usr/lib64/sane/$name"
+    done
+    remove_dir /usr/lib/sane
+fi
