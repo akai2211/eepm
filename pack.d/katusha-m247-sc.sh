@@ -53,8 +53,11 @@ erc unpack $PKGNAME.deb || fatal
 rm katusha*.deb
 cd katusha*
 
-SANELIB=usr/lib64/sane
-[ -d /usr/lib/x86_64-linux-gnu ] && SANELIB=usr/lib/x86_64-linux-gnu/sane
+SANELIB=usr/lib/sane
+if [ "$(epm print info -b)" = "64" ] ; then
+    SANELIB=usr/lib64/sane
+    [ -d /usr/lib/x86_64-linux-gnu ] && SANELIB=usr/lib/x86_64-linux-gnu/sane
+fi
 
 mkdir -p "$SANELIB"
 if [ -d usr/lib/x86_64-linux-gnu/sane ] && [ "$SANELIB" != "usr/lib/x86_64-linux-gnu/sane" ] ; then
