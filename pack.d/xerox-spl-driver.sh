@@ -26,9 +26,12 @@ install -Dm0755 "x86_64/pstosecps" "usr/lib/cups/filter/pstosecps"
 install -Dm0755 "x86_64/rastertospl" "usr/lib/cups/filter/rastertospl"
 
 # scanner drivers install
-install -Dm0644 "x86_64/libsane-smfp.so.1.0.1" "usr/lib/sane/libsane-smfp.so.1.0.1"
+SANELIB=usr/lib64/sane
+[ -d /usr/lib/x86_64-linux-gnu ] && SANELIB=usr/lib/x86_64-linux-gnu/sane
 
-pushd "usr/lib/sane/"
+install -Dm0644 "x86_64/libsane-smfp.so.1.0.1" "$SANELIB/libsane-smfp.so.1.0.1"
+
+pushd "$SANELIB"
 ln -s libsane-smfp.so.1.0.1 libsane-smfp.so.1
 ln -s libsane-smfp.so.1.0.1 libsane-smfp.so
 popd
