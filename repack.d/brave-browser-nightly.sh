@@ -23,3 +23,4 @@ use_system_xdg
 
 add_chromium_deps
 
+remove_file /usr/share/applications/com.brave.Browser.desktop
