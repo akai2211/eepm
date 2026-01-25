@@ -3,8 +3,9 @@
 PKGNAME=flameshot
 SUPPORTEDARCHES="x86_64"
 VERSION="$2"
+RELEASE="$3"
 DESCRIPTION="Powerful yet simple to use screenshot software"
-URL="https://github.com/flameshot-org/flameshot/"
+URL="https://github.com/flameshot-org/flameshot"
 
 . $(dirname $0)/common.sh
 
@@ -13,13 +14,23 @@ if [ "$VERSION" = "*" ] ; then
 fi
 
 pkgtype=$(epm print info -p)
-case $pkgtype in
+
+case "$pkgtype" in
     rpm)
-        PKGURL="https://github.com/flameshot-org/flameshot/releases/download/v${VERSION}/flameshot-${VERSION}-1.fc41.x86_64.rpm"
+        asset="flameshot-${VERSION}-${RELEASE}.fc41.x86_64.rpm"
         ;;
     *)
-        PKGURL="https://github.com/flameshot-org/flameshot/releases/download/v${VERSION}/flameshot-${VERSION}-1.ubuntu-24.04.amd64.deb"
+        debvariant="ubuntu-22.04"
+        case "$(epm print info -s)" in
+            debian)
+                debvariant="debian-12"
+                ;;
+        esac
+        asset="flameshot-${VERSION}-${RELEASE}.${debvariant}.amd64.deb"
+        ;;
         ;;
 esac
+
+PKGURL="https://github.com/flameshot-org/flameshot/releases/download/v$VERSION/$asset"
 
 install_pkgurl
