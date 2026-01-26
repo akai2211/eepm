@@ -629,12 +629,14 @@ is_supported_arch "$(epm print info -a)" || fatal "Only '$SUPPORTEDARCHES' archi
 is_repacked_packages $REPOPKGNAME || exit 0
 
 # hack for hplip
-[ "$PKGNAME" = "hplip-plugin" ] && VERSION="*"
+[ "$PKGNAME" = "hplip-plugin" ] && VERSION="*" && RELEASE="*"
 
 if [ -z "$VERSION" ] && [ -z "$force" ] && [ -z "$latest" ] ; then
     # by default use latest known version to install
     VERSION="$(get_latest_version $PKGNAME)"
     CHECKED_VERSION="$VERSION"
+    # hack
+    [ -n "VERSION" ] && [ -z "$RELEASE" ] && RELEASE="1"
 fi
 
 # default version value (can be overrided with arg $2 or by update)
