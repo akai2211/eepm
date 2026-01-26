@@ -6,8 +6,8 @@ prepare:
   script:
     - apt-get update && apt-get install -y git wget
     - bash ci/gen-ci.sh > .gitlab-ci.yml
-    - git config user.name "CI Bot"
-    - git config user.email "ci@etersoft.ru"
+    - git config user.name "builder-robot"
+    - git config user.email "builder-robot@etersoft.ru"
     - |
         if [ -n "$FULL_TEST" ]; then
           CI_GENERATED_BRANCH="ci-generated-full-test"
@@ -20,7 +20,7 @@ prepare:
         git checkout -B "${CI_GENERATED_BRANCH}"
     - git add .gitlab-ci.yml
     - git commit -m "update gitlab-ci.yml from epmp list" --allow-empty
-    - git remote set-url origin https://vanomj:$CI_PUSH_TOKEN@gitlab.eterfund.ru/vanomj/eepm.git
+    - git remote set-url origin https://builder-robot:$CI_PUSH_TOKEN@gitlab.eterfund.ru/etersoft/eepm.git
     - git push -f origin "${CI_GENERATED_BRANCH}" 2>/dev/null
   only:
     - schedules
