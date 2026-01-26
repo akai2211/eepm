@@ -40,11 +40,11 @@
 
 .test_default_ipfs: &test_default_ipfs
   before_script:
-    - ./bin/epm -y install '/usr/bin/wget' '/usr/bin/file' '/usr/bin/bash'
+    - ./bin/epm -y install wget file bash
     - mkdir -p /var/lib/eepm
     - cp ipfs/eget-ipfs-db.txt /var/lib/eepm/eget-ipfs-db.txt
 
 .test_default_latest: &test_default_latest
   before_script:
-    - ./bin/epm -y install '/usr/bin/wget' '/usr/bin/file' '/usr/bin/bash'
+    - ./bin/epm -y install wget file bash
     - mkdir -p /var/lib/eepm
