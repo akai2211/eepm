@@ -8,10 +8,19 @@ prepare:
     - bash ci/gen-ci.sh > .gitlab-ci.yml
     - git config user.name "CI Bot"
     - git config user.email "ci@etersoft.ru"
-    - git checkout -B ci-generated
+    - |
+        if [ -n "$FULL_TEST" ]; then
+          CI_GENERATED_BRANCH="ci-generated-full-test"
+        elif [ -n "$GET_VERSION" ]; then
+          CI_GENERATED_BRANCH="ci-generated-get-version"
+        else
+          CI_GENERATED_BRANCH="ci-generated"
+        fi
+        echo "Using generated branch: ${CI_GENERATED_BRANCH}"
+        git checkout -B "${CI_GENERATED_BRANCH}"
     - git add .gitlab-ci.yml
     - git commit -m "update gitlab-ci.yml from epmp list" --allow-empty
     - git remote set-url origin https://vanomj:$CI_PUSH_TOKEN@gitlab.eterfund.ru/vanomj/eepm.git
-    - git push -f origin ci-generated 2>/dev/null
+    - git push -f origin "${CI_GENERATED_BRANCH}" 2>/dev/null
   only:
     - schedules

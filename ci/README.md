@@ -7,7 +7,8 @@
 Как это работает
 - Планировщик запускает задачу `prepare` из `.gitlab-ci.yml`.
 - Задача выполняет `bash ci/gen-ci.sh > .gitlab-ci.yml` и пушит результат в
-  ветку `ci-generated`.
+  ветку `ci-generated`. Для пресетов `FULL_TEST` и `GET_VERSION` используются
+  отдельные ветки: `ci-generated-full-test` и `ci-generated-get-version`.
 - Сгенерированный пайплайн выполняет:
   - download_test: `ci/prepare_ipfs.sh`
   - publish_download_logs: `ci/push-ipfs-db.sh`
