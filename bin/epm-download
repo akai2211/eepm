@@ -270,6 +270,7 @@ __epm_download_alt()
 startwith_inlist()
 {
     local str="$1"
+    shift
     local i
     for i in "$@" ; do
         startwith "$str" "$i" && return
