@@ -199,6 +199,9 @@ check_command()
     exists)                   # HELPCMD: check if the service is installed on the system
         serv_cmd=exists
         ;;
+    is-active|is-running)     # HELPCMD: check if the service is running (returns exit code 0 if running)
+        serv_cmd=is_active
+        ;;
     edit)                     # HELPCMD: edit service file overload (use --full to edit full file)
         serv_cmd=edit
         ;;
