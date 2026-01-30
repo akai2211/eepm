@@ -240,6 +240,7 @@ __epm_download_alt()
     fi
 
     load_helper epm-sh-altlinux
+    load_helper epm-installed
 
     # TODO: enable if install --download-only will works
     if tasknumber "$@" >/dev/null ; then
@@ -278,12 +279,14 @@ startwith_inlist()
     return 1
 }
 
-    # Non-local variable because `local` builtin returns exit code "0" even if command substitution fails.
-    epm_download_alt__result_url="$(__epm_alt_get_package_url install --reinstall "$@")" || return
+    # Split packages: --reinstall only works for already installed packages
+    separate_installed "$@"
 
-    # old systems ignore reinstall ?
+    local urls=""
+    [ -n "$pkg_noninstalled" ] && urls="$(__epm_alt_get_package_url install $pkg_noninstalled)"
+    [ -n "$pkg_installed" ] && urls="$urls $(__epm_alt_get_package_url install --reinstall $pkg_installed)"
     local url
-    for url in $epm_download_alt__result_url ; do
+    for url in $urls ; do
         startwith_inlist "$(basename "$url")" "$@" || continue
         [ -n "$print_url" ] && echo "$url" && continue
         # TODO: download together
