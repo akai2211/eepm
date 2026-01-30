@@ -66,9 +66,17 @@ epm_repo()
         [ -n "$quiet" ] || epm repo list
         confirm_info 'You are about to set repo ' "$*" "(all repos will be removed)."
         load_helper epm-reposave
+        load_helper epm-repomirrors
+        # Remember current mirror before removing repos
+        local current_mirror
+        current_mirror=$(__get_current_mirror)
         try_change_alt_repo
         epm repo rm all
         epm addrepo "$@" || fatal 'Cannot add repo "'$@'", restoring...'
+        # Restore mirror if it was detected
+        if [ -n "$current_mirror" ] ; then
+            epm repo change "$current_mirror" || warning "Failed to restore mirror $current_mirror"
+        fi
         end_change_alt_repo
         ;;
     switch)                           # HELPCMD: switch repo to <repo>: rewrite URLs to the repo (but use epm release-upgrade [Sisyphus|p10] for upgrade to a next branch)
