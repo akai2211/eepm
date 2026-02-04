@@ -18,8 +18,8 @@ git clone "$IPFS_REPO_URL" "$WORKDIR"
 cd "$WORKDIR"
 
 # git setup
-git config user.name "CI Bot"
-git config user.email "ci@etersoft.ru"
+git config user.name "Builder Robot"
+git config user.email "builer-robot@etersoft.ru"
 
 # clean old data
 rm -rf ipfs/logs/ ipfs/errors/ || true
@@ -47,7 +47,7 @@ git commit -m "IPFS DB update (pipeline $CI_PIPELINE_ID)" || {
 
 # push via PAT
 git remote set-url origin \
-  "https://vanomj:${CI_PUSH_TOKEN}@gitlab.eterfund.ru/vanomj/epm-play-ci-results.git"
+  "https://builder-robot:${CI_PUSH_TOKEN}@gitlab.eterfund.ru/etersoft/epm-play-ci-results.git"
 
 git push
 

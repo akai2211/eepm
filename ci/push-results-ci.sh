@@ -17,8 +17,8 @@ git clone "$RESULTS_REPO_URL" "$WORKDIR"
 cd "$WORKDIR"
 
 # git configuration
-git config user.name "CI Bot"
-git config user.email "ci@etersoft.ru"
+git config user.name "Builder Robot"
+git config user.email "builder-robot@etersoft.ru"
 
 # clean old data
 rm -rf "${RESULTS_DIR}"/*/epm-logs "${RESULTS_DIR}"/*/epm-errors "$META_DIR" || true
@@ -41,5 +41,5 @@ git commit -m "CI results (${RESULTS_LABEL}): pipeline $CI_PIPELINE_ID" || {
 }
 
 # push
-git remote set-url origin "https://vanomj:${CI_PUSH_TOKEN}@gitlab.eterfund.ru/vanomj/epm-play-ci-results.git"
+git remote set-url origin "https://builder-robot:${CI_PUSH_TOKEN}@gitlab.eterfund.ru/etersoft/epm-play-ci-results.git"
 git push
