@@ -133,6 +133,20 @@ move_file()
     true
 }
 
+# Move dir contents to a new place (replaces paths in spec)
+move_dir()
+{
+    local from="$1"
+    local to="$2"
+    [ -d "$BUILDROOT$from" ] || return
+    mkdir -p "$BUILDROOT$to"
+    echo "Moving $from/* to $to/ ..."
+    mv -v "$BUILDROOT$from"/* "$BUILDROOT$to/"
+    rmdir "$BUILDROOT$from" 2>/dev/null || rm -rv "$BUILDROOT$from"
+    subst "s|$from|$to|g" $SPEC
+    true
+}
+
 # Remove dir (recursively) from the file system and from spec
 remove_dir()
 {
