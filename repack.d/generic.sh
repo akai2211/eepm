@@ -96,9 +96,11 @@ for i in lib/python3 lib/python2.7 ; do
     fi
 done
 
-# move Debian multiarch lib paths to standard paths
-move_dir /usr/lib/x86_64-linux-gnu /usr/lib64
-move_dir /usr/lib/i386-linux-gnu /usr/lib
+# move Debian multiarch lib paths to standard paths (not needed for deb target)
+if [ "$(epm print info -p)" != "deb" ] ; then
+    move_dir /usr/lib/x86_64-linux-gnu /usr/lib64
+    move_dir /usr/lib/i386-linux-gnu /usr/lib
+fi
 
 for i in $BUILDROOT/usr/bin/* ; do
     [ -L "$i" ] && continue
