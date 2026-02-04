@@ -22,7 +22,6 @@ load_helper epm-install
 
 epm_Install()
 {
-    # copied from epm_install
     local names="$(echo $pkg_names | filter_out_installed_packages)"
     local files="$(echo $pkg_files | filter_out_installed_packages)"
 
@@ -30,7 +29,5 @@ epm_Install()
 
     epm_update || { [ -n "$force" ] || return ; }
 
-    epm_install_names $names || return
-
-    epm_install_files $files
+    epm_install
 }
