@@ -22,6 +22,11 @@ for i in data-dir gnome-platform scripts lib/dri etc bin meta snap ; do
     remove_dir $PRODUCTDIR/$i
 done
 
+# Remove unnecessary files from usr/share
+for i in usr/share/help usr/share/doc usr/share/locale usr/share/man usr/share/lintian ; do
+    remove_dir $PRODUCTDIR/$i
+done
+
 # Check if app has binary in usr/bin
 if [ -d usr/bin ] && ls usr/bin/* >/dev/null 2>&1 ; then
     # Create exec commands for all binaries found in desktop files
