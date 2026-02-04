@@ -96,6 +96,10 @@ for i in lib/python3 lib/python2.7 ; do
     fi
 done
 
+# move Debian multiarch lib paths to standard paths
+move_dir /usr/lib/x86_64-linux-gnu /usr/lib64
+move_dir /usr/lib/i386-linux-gnu /usr/lib
+
 for i in $BUILDROOT/usr/bin/* ; do
     [ -L "$i" ] && continue
     [ -f "$i" ] || continue
