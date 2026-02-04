@@ -18,16 +18,9 @@ if [ -d "$BUILDROOT/usr/lib/sane" ] ; then
     remove_dir /usr/lib/sane
 fi
 
-if [ "$(epm print info -p)" = "rpm" ] ; then
-    mv usr/lib/x86_64-linux-gnu usr/lib64
-    subst 's|/usr/lib/x86_64-linux-gnu|/usr/lib64|' $SPEC
-fi
-
-# Debian style duplicates
+# Debian style duplicates (x86_64-linux-gnu and i386-linux-gnu handled by generic.sh)
 remove_dir /usr/lib/aarch64-linux-gnu
 remove_dir /usr/lib/arm-linux-gnueabihf
-remove_dir /usr/lib/i386-linux-gnu
-remove_dir /usr/lib/x86_64-linux-gnu
 
 # duplicates main files
 remove_dir /usr/local
