@@ -276,7 +276,8 @@ __epm_repack_to_rpm()
             fatal 'Can'\''t find converted rpm for source binary package $pkg (got $repacked_rpm)'
         fi
 
-        epm_check_repacked_rpm "$repacked_pkg"
+        # check forbidden requires only if specific repack script exists
+        has_repack_script $repackscript && epm_check_repacked_rpm "$repacked_pkg"
 
         cd "$EPMCURDIR" >/dev/null
 
