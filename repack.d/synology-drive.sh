@@ -38,11 +38,8 @@ ignore_lib_requires libnautilus-extension.so.1
 move_file /usr/lib/nautilus/extensions-4/libnautilus-drive-extension-4.so /usr/lib64/nautilus/extensions-4/libnautilus-drive-extension-4.so
 # don't support legacy
 remove_file /usr/lib/nautilus/extensions-3.0/libnautilus-drive-extension.so
-# deb systems only
-remove_file /usr/lib/x86_64-linux-gnu/nautilus/extensions-4/libnautilus-drive-extension.so
 
 remove_dir /usr/lib
-remove_dir /usr/lib/x86_64-linux-gnu/
 
 # old nautilus
 remove_file $PRODUCTDIR/package/cloudstation/icon-overlay/15/lib/plugin-cb.so || :
