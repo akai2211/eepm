@@ -15,6 +15,8 @@ filename=$(eget -O- https://download.max.ru/linux/deb/dists/stable/main/binary-a
 
 VERSION=$(echo "$filename" | sed 's/^MAX-//' | cut -d. -f1-3)
 
+PKGBASEURL="https://download.max.ru/linux"
+
 pkgtype=$(epm print info -p)
 distr="$(epm print info -s)"
 case $pkgtype in

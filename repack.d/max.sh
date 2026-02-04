@@ -13,4 +13,4 @@ move_to_opt
 
 fix_desktop_file /usr/share/max/bin/max
 
-add_bin_link_command $PRODUCT /opt/$PRODUCT/bin/$PRODUCT
+add_bin_link_command $PRODUCT $PRODUCTDIR/bin/$PRODUCT
