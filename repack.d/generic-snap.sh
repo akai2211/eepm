@@ -22,14 +22,27 @@ for i in data-dir gnome-platform scripts lib/dri etc bin meta snap ; do
     remove_dir $PRODUCTDIR/$i
 done
 
-# hack
-if [ -d usr/share/applications ] && [ -f usr/bin/$PRODUCT ] ; then
-    # like whatsie
-    add_bin_exec_command $PRODUCT "$PRODUCTDIR/usr/bin/$PRODUCT"
-else
-    for i in usr ; do
-        remove_dir $PRODUCTDIR/$i
+# Check if app has binary in usr/bin
+if [ -d usr/bin ] && ls usr/bin/* >/dev/null 2>&1 ; then
+    # Create exec commands for all binaries found in desktop files
+    main_bin=""
+    for df in $BUILDROOT/usr/share/applications/*.desktop ; do
+        [ -f "$df" ] || continue
+        # Extract binary name from Exec=, removing quotes, path and arguments
+        bin_name="$(grep -m1 '^Exec=' "$df" | sed -e 's|^Exec=||' -e 's|"||g' -e 's| .*||' -e 's|.*/||')"
+        [ -n "$bin_name" ] && [ -f "usr/bin/$bin_name" ] || continue
+        add_bin_exec_command $bin_name "$PRODUCTDIR/usr/bin/$bin_name"
+        # Remember first binary as main
+        [ -z "$main_bin" ] && main_bin="$bin_name"
     done
+    # Create symlink from package name to main binary if different
+    if [ -n "$main_bin" ] && [ "$main_bin" != "$PRODUCT" ] ; then
+        add_bin_link_command $PRODUCT $main_bin
+    elif [ -z "$main_bin" ] && [ -f "usr/bin/$PRODUCT" ] ; then
+        add_bin_exec_command $PRODUCT "$PRODUCTDIR/usr/bin/$PRODUCT"
+    fi
+else
+    remove_dir $PRODUCTDIR/usr
 fi
 
 for i in libEGL.so.1 libdrm.so.2 libdrm_amdgpu.so.1 libva-drm.so.2 libva-x11.so.2 libva.so.2 libcom_err.so.2 libdbus-1.so.3 libexpat.so.1 libkeyutils.so.1 ; do
