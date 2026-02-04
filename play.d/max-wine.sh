@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PKGNAME=max-qt
+PKGNAME=max-wine
 SUPPORTEDARCHES="x86_64"
 DESCRIPTION='Быстрое и лёгкое приложение для общения и решения повседневных задач (перепаковка Qt версии через wine)'
 URL="https://max.ru/"

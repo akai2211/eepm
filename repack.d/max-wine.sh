@@ -4,7 +4,7 @@ BUILDROOT="$1"
 
 SPEC="$2"
 
-PRODUCT=max-qt
+PRODUCT=max-wine
 PRODUCTDIR=/opt/$PRODUCT
 
 . $(dirname $0)/common.sh

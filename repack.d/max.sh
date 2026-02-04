@@ -9,6 +9,8 @@ SPEC="$2"
 # conflicts with MAX from AppImage
 add_conflicts MAX
 
+# replace old wine-based package
+add_obsoletes max-qt
 move_to_opt
 
 fix_desktop_file /usr/share/max/bin/max
