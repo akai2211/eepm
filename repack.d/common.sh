@@ -474,6 +474,12 @@ add_provides()
     __add_tag_after_d "Provides: $*"
 }
 
+add_obsoletes()
+{
+    [ -n "$1" ] || return
+    __add_tag_after_d "Obsoletes: $*"
+}
+
 # for checking in epm-repack-rpm
 add_forced_requires()
 {
