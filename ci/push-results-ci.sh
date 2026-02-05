@@ -3,6 +3,10 @@ set -euo pipefail
 
 echo "Collecting CI results"
 
+# Get epm version (major.minor)
+EPM_VERSION=$("$CI_PROJECT_DIR/bin/epm" --version --short | cut -d. -f1,2)
+echo "EPM version: $EPM_VERSION"
+
 RESULTS_REPO_URL="https://gitlab.eterfund.ru/etersoft/epm-play-ci-results.git"
 WORKDIR="results"
 RESULTS_DIR="${CI_RESULTS_DIR:-epm-results}"
@@ -40,6 +44,7 @@ git commit -m "CI results (${RESULTS_LABEL}): pipeline $CI_PIPELINE_ID" || {
     exit 0
 }
 
-# push
+# push to version branch
 git remote set-url origin "https://builder-robot:${CI_PUSH_TOKEN}@gitlab.eterfund.ru/etersoft/epm-play-ci-results.git"
-git push
+git checkout -b "${EPM_VERSION}"
+git push origin "${EPM_VERSION}" 2>/dev/null
