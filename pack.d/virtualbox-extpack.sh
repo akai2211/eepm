@@ -5,10 +5,11 @@ RETURNTARNAME="$2"
 
 . $(dirname $0)/common.sh
 
-# Oracle_VM_VirtualBox_Extension_Pack-$VERSION.vbox-extpack
+# Oracle_VM_VirtualBox_Extension_Pack-$VERSION.vbox-extpack (< 7.1.0)
+# Oracle_VirtualBox_Extension_Pack-$VERSION.vbox-extpack (>= 7.1.0)
 BASENAME=$(basename $TAR .vbox-extpack)
 VERSION=$(echo $BASENAME | sed -e 's|.*-||')
-BASENAME="Oracle_VM_VirtualBox_Extension_Pack"
+BASENAME=$(echo $BASENAME | sed -e 's|-[^-]*$||')
 ln -s $TAR $BASENAME.tgz
 erc unpack $BASENAME.tgz || fatal
 
