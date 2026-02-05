@@ -20,7 +20,7 @@ prepare:
         git checkout -B "${CI_GENERATED_BRANCH}"
     - git add .gitlab-ci.yml
     - git commit -m "update gitlab-ci.yml from epmp list" --allow-empty
-    - git remote set-url origin https://builder-robot:$CI_PUSH_TOKEN@gitlab.eterfund.ru/etersoft/eepm.git
+    - git remote set-url origin https://builder-robot:$CI_PUSH_TOKEN@gitlab.eterfund.ru/builder-robot/eepm.git
     - git push -f origin "${CI_GENERATED_BRANCH}" 2>/dev/null
   only:
     - schedules
