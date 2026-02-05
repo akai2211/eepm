@@ -126,7 +126,8 @@ __detect_alt_release_by_repo()
 
 __get_conflict_release_pkg()
 {
-    epm qf --quiet --short /etc/fedora-release | head -n1
+    # check both files as branding packages may own either
+    epm qf --quiet --short /etc/fedora-release /etc/altlinux-release 2>/dev/null | head -n1
 }
 
 get_fix_release_pkg()
