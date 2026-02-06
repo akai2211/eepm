@@ -17,8 +17,14 @@ if [ "$RESULTS_DIR" != "epm-results" ]; then
   META_DIR="${RESULTS_DIR}/meta"
 fi
 
-git clone "$RESULTS_REPO_URL" "$WORKDIR"
-cd "$WORKDIR"
+# Clone target branch if exists, otherwise clone default and create new branch
+if git clone -b "${EPM_VERSION}" "$RESULTS_REPO_URL" "$WORKDIR" 2>/dev/null; then
+    cd "$WORKDIR"
+else
+    git clone "$RESULTS_REPO_URL" "$WORKDIR"
+    cd "$WORKDIR"
+    git checkout -b "${EPM_VERSION}"
+fi
 
 # git configuration
 git config user.name "Builder Robot"
@@ -46,5 +52,4 @@ git commit -m "CI results (${RESULTS_LABEL}): pipeline $CI_PIPELINE_ID" || {
 
 # push to version branch
 git remote set-url origin "https://builder-robot:${CI_PUSH_TOKEN}@gitlab.eterfund.ru/etersoft/epm-play-ci-results.git"
-git checkout -b "${EPM_VERSION}"
 git push origin "${EPM_VERSION}" 2>/dev/null

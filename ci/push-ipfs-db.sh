@@ -17,9 +17,14 @@ if [ ! -f "ipfs/eget-ipfs-db.txt" ]; then
   exit 1
 fi
 
-# clone repo
-git clone "$IPFS_REPO_URL" "$WORKDIR"
-cd "$WORKDIR"
+# Clone target branch if exists, otherwise clone default and create new branch
+if git clone -b "${EPM_VERSION}" "$IPFS_REPO_URL" "$WORKDIR" 2>/dev/null; then
+    cd "$WORKDIR"
+else
+    git clone "$IPFS_REPO_URL" "$WORKDIR"
+    cd "$WORKDIR"
+    git checkout -b "${EPM_VERSION}"
+fi
 
 # git setup
 git config user.name "Builder Robot"
@@ -51,7 +56,6 @@ git commit -m "IPFS DB update (pipeline $CI_PIPELINE_ID)" || {
 
 # push to version branch
 git remote set-url origin "https://builder-robot:${CI_PUSH_TOKEN}@gitlab.eterfund.ru/etersoft/epm-play-ci-results.git"
-git checkout -b "${EPM_VERSION}"
 git push origin "${EPM_VERSION}" 2>/dev/null
 
 echo "=== IPFS DB and download log's published ==="
