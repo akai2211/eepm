@@ -19,12 +19,68 @@
 
 load_helper epm-print
 
+epm_whatprovides_help()
+{
+    message 'epm whatprovides - print packages that provide the given target
+Usage: epm whatprovides [options] <target>
+'
+    get_help HELPOPT $SHAREDIR/epm-whatprovides
+}
+
+__epm_whatprovides_installed()
+{
+    local pkg="$*"
+
+    case $PMTYPE in
+        *-rpm)
+            if [ -n "$short" ] ; then
+                docmd rpm -q --whatprovides --queryformat '%{name}\n' $pkg
+            else
+                docmd rpm -q --whatprovides $pkg
+            fi
+            ;;
+        *-dpkg)
+            if [ -n "$short" ] ; then
+                docmd dpkg-query -W "--showformat=\${Package}\n" $pkg
+            else
+                docmd dpkg-query -W "--showformat=\${Package}-\${Version}\n" $pkg
+            fi
+            ;;
+        pacman)
+            if [ -n "$short" ] ; then
+                docmd pacman -Q $pkg | sed -e 's| .*||'
+            else
+                docmd pacman -Q $pkg
+            fi
+            ;;
+        *)
+            fatal 'Have no suitable command for $PMTYPE in __epm_whatprovides_installed()'
+            ;;
+    esac
+}
+
 epm_whatprovides()
 {
     local CMD
     [ -n "$pkg_url" ] && fatal "whatprovides does not handle URLs"
+
+    case "$pkg_options" in
+        -h|--help)            # HELPOPT: show this help
+            epm_whatprovides_help
+            return
+            ;;
+        --installed)          # HELPOPT: search only installed packages
+            shift
+            ;;
+    esac
+
     [ -n "$pkg_files$pkg_names" ] || fatal "whatprovides: package name is missed"
     local pkg=$(print_name $pkg_files $pkg_names)
+
+    if [ "$pkg_options" = "--installed" ] ; then
+        __epm_whatprovides_installed $pkg
+        return
+    fi
 
 # by package name
 case $PMTYPE in
