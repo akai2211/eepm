@@ -138,31 +138,18 @@ get_archive_name()
 	fi
 }
 
-# FIXME
-is_plain_text()
-{
-	file --mime-type "$1" | grep -q "text/" && echo "plain" && return
-	file "$1" | grep -q "empty" && echo "plain" && return
-	return 1
-}
 
-
-# TODO: improve
-# TODO: detect by extension as default
+# Detect archive type: try extension first, then content detection via file(1)
 get_archive_type()
 {
-	local aext
-	if [ -r "$1" ] ; then
-		# TODO: rewrite with mime
-		file "$1" | grep -q "Zip archive data" && echo "zip" && return
-		file "$1" | grep -q "RAR archive data" && echo "rar" && return
-	# used for unexists files too
-	#else
-	#	warning "Couldn't read $1, skipping mime checking"
+	local type
+	if type=$(get_archive_ext "$1") ; then
+		echo "$type"
+		return
 	fi
 
-	if aext=$(get_archive_ext "$1") ; then
-		echo $aext
+	if type=$(detect_by_content "$1") && [ "$type" != "plain" ] ; then
+		echo "$type"
 		return
 	fi
 	return 1
