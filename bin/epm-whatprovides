@@ -40,11 +40,19 @@ __epm_whatprovides_installed()
             fi
             ;;
         *-dpkg)
-            if [ -n "$short" ] ; then
-                docmd dpkg-query -W "--showformat=\${Package}\n" $pkg
-            else
-                docmd dpkg-query -W "--showformat=\${Package}-\${Version}\n" $pkg
-            fi
+            # get providers list from apt-cache and filter to installed
+            local providers
+            providers="$(apt-cache showpkg $pkg 2>/dev/null | sed -n '/^Reverse Provides:/,$ {/^Reverse Provides:/d; p}' | awk '{print $1}' | sort -u)"
+            [ -n "$providers" ] || return 1
+            local p
+            for p in $providers ; do
+                dpkg -l "$p" 2>/dev/null | grep -q '^ii' || continue
+                if [ -n "$short" ] ; then
+                    echo "$p"
+                else
+                    dpkg-query -W "--showformat=\${Package}-\${Version}\n" "$p" 2>/dev/null
+                fi
+            done
             ;;
         pacman)
             if [ -n "$short" ] ; then
