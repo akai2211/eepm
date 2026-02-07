@@ -17,6 +17,15 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+__epm_mark_resolve()
+{
+    local i pkg
+    for i in "$@" ; do
+        pkg="$(epm query --short "$i" 2>/dev/null)" || { warning "Package '$i' is not installed" ; continue ; }
+        echo "$pkg"
+    done
+}
+
 __alt_mark_hold_package()
 {
         local pkg="$1"
@@ -89,6 +98,11 @@ case $BASEDISTRNAME in
         ;;
 esac
 
+local resolved
+resolved="$(__epm_mark_resolve "$@")" || return 1
+[ -n "$resolved" ] || return 1
+set -- $resolved
+
 case $PMTYPE in
     apt-dpkg)
         sudocmd apt-mark hold "$@"
@@ -123,6 +137,11 @@ case $BASEDISTRNAME in
         exit
         ;;
 esac
+
+local resolved
+resolved="$(__epm_mark_resolve "$@")" || return 1
+[ -n "$resolved" ] || return 1
+set -- $resolved
 
 case $PMTYPE in
     apt-dpkg)
@@ -212,6 +231,11 @@ epm_mark_showhold | grep -q "^$1$"
 epm_mark_auto()
 {
 
+local resolved
+resolved="$(__epm_mark_resolve "$@")" || return 1
+[ -n "$resolved" ] || return 1
+set -- $resolved
+
 case $BASEDISTRNAME in
     "alt")
         sudocmd apt-mark auto "$@"
@@ -245,6 +269,11 @@ esac
 
 epm_mark_manual()
 {
+
+local resolved
+resolved="$(__epm_mark_resolve "$@")" || return 1
+[ -n "$resolved" ] || return 1
+set -- $resolved
 
 case $BASEDISTRNAME in
     "alt")
