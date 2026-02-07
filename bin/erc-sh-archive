@@ -178,3 +178,46 @@ extract_command() {
         docmd $HAVE_7Z x -so "$archive" | docmd $HAVE_7Z x -y -si -ttar
     fi
 }
+
+# Read up to 14 bytes as hex string (from file or stdin)
+bytes_to_hex()
+{
+    od -A n -t x1 -N 14 "$@" 2>/dev/null | tr -d ' \n'
+}
+
+# Convert hex string to raw bytes
+hex_to_bytes()
+{
+    printf '%b' "$(echo "$1" | sed 's/../\\x&/g')"
+}
+
+# Convert MIME type to short format name
+# application/x-bzip2 -> bzip2, text/* -> plain, etc.
+# Returns 1 for unrecognized MIME types
+mime_to_type()
+{
+    case "$1" in
+        text/*) echo "plain" ; return ;;
+    esac
+    local type="${1#application/}"
+    [ "$type" != "$1" ] || return 1
+    case "$type" in
+        x-7z-compressed) type="7z" ;;
+        vnd.rar)         type="rar" ;;
+        *)               type="${type#x-}" ;;
+    esac
+    case "$type" in
+        gzip|bzip2|xz|lz4|zstd|lzma|compress) ;;
+        zip|tar|7z|rar) ;;
+        *) return 1 ;;
+    esac
+    echo "$type"
+}
+
+# Detect compression format by file content via file(1)
+detect_by_content()
+{
+    local file="$1"
+    [ -r "$file" ] || return 1
+    mime_to_type "$(file --mime-type -b "$file" 2>/dev/null)"
+}
