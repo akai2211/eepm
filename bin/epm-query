@@ -368,9 +368,23 @@ epm_query()
 
     if [ -n "$short" ] ; then
         # shellcheck disable=SC2046
-        __epm_query_shortname $(print_name $pkg_names) || return
+        __epm_query_shortname $(print_name $pkg_names) && return
     else
         # shellcheck disable=SC2046
-        __epm_query_name $(print_name $pkg_names) || return
+        __epm_query_name $(print_name $pkg_names) && return
     fi
+
+    # fallback: try to find installed package by provides
+    load_helper epm-whatprovides
+    local i
+    for i in $(print_name $pkg_names) ; do
+        local result
+        result="$(quiet=1 __epm_whatprovides_installed "$i" 2>/dev/null)" || continue
+        [ -n "$result" ] || continue
+        info 'Installed package providing $i:'
+        echo "$result"
+        return 0
+    done
+
+    return 1
 }
