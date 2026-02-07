@@ -223,8 +223,11 @@ case $PMTYPE in
     apt-dpkg)
         sudocmd apt-mark auto "$@"
         ;;
-    dnf-rpm|dnf5-rpm)
+    dnf-rpm)
         sudocmd dnf mark remove "$@"
+        ;;
+    dnf5-rpm)
+        sudocmd dnf mark dependency "$@"
         ;;
     pacman)
             sudocmd pacman -D --asdeps "$@"
@@ -254,8 +257,11 @@ case $PMTYPE in
     apt-dpkg)
         sudocmd apt-mark manual "$@"
         ;;
-    dnf-rpm|dnf5-rpm)
+    dnf-rpm)
         sudocmd dnf mark install "$@"
+        ;;
+    dnf5-rpm)
+        sudocmd dnf mark user "$@"
         ;;
     pacman)
             sudocmd pacman -D --asexplicit "$@"
