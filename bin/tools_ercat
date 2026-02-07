@@ -54,35 +54,114 @@ print_version()
         echo "This program may be freely redistributed under the terms of the GNU AGPLv3."
 }
 
-regular_unpack()
+# Run decompressor on $file (from caller scope) or stdin
+decomp()
 {
-    local file="$1"
-    local prg="$2"
-    local pkg="$3"
-    local opt="$4"
-
-    # instead of epm assure
+    local prg="$1"
+    local pkg="$2"
+    shift 2
     if ! is_command "$prg" ; then
-        epm assure $prg $pkg || fatal "Try install $pkg package for $prg unpack command."
+        epm assure "$prg" "$pkg" || fatal "Try install $pkg package for $prg unpack command."
     fi
-
-    docmd "$prg" $opt "$file" || fatal
+    if [ -n "$file" ] ; then
+        docmd "$prg" "$@" "$file" || fatal
+    else
+        docmd "$prg" "$@" || fatal
+    fi
 }
 
+# Decompress to stdout
+# Usage: unpack_type TYPE [FILE]
+# Without FILE, reads from stdin
+unpack_type()
+{
+    local file="$2"
+    case $1 in
+        gz|gzip)
+            if is_command pigz ; then
+                decomp pigz pigz -dc
+            else
+                decomp gunzip gzip -c
+            fi
+            ;;
+        bz2|bzip2)
+            if is_command pbzip2 ; then
+                decomp pbzip2 pbzip2 -dc
+            else
+                decomp bzcat bzip2
+            fi
+            ;;
+        xz)
+            if [ -n "$file" ] && is_command pixz ; then
+                docmd pixz -d < "$file"
+            else
+                decomp xzcat xz
+            fi
+            ;;
+        Z|compress)
+            decomp zcat gzip
+            ;;
+        lzma)
+            decomp lzcat xz
+            ;;
+        zst|zstd)
+            decomp zstdcat zstd
+            ;;
+        lz4)
+            decomp lz4 lz4 -dc
+            ;;
+        plain)
+            if [ -n "$file" ] ; then
+                docmd cat "$file" || fatal
+            else
+                cat
+            fi
+            ;;
+        *)
+            fatal "Unsupported compression format $1"
+            ;;
+    esac
+}
+
+# Read from stdin, detect format via file(1), decompress to stdout
+process_stdin()
+{
+    local hex mime TYPE
+
+    # Read first 14 bytes as hex (enough for file(1) to detect all formats)
+    hex=$(dd bs=1 count=14 2>/dev/null | bytes_to_hex)
+
+    if [ -z "$hex" ] ; then
+        return 0
+    fi
+
+    mime=$(hex_to_bytes "$hex" | file --mime-type -b -)
+
+    if TYPE=$(mime_to_type "$mime") ; then
+        { hex_to_bytes "$hex"; cat; } | unpack_type "$TYPE"
+    else
+        fatal "Unknown binary data on stdin ($mime), cannot detect compression format"
+    fi
+}
 
 progname="${0##*/}"
 
-Usage="Usage: $progname [options] file(s)..."
-Descr="ercat - universal file uncompressor"
+Usage="Usage: $progname [options] [file(s)...|-]"
+Descr="ercat - universal file uncompressor (supports stdin)"
 
 quiet=
 cmd=$1
 
-# Just printout help if run without args
+# No args: read from stdin if piped, otherwise show help
 if [ -z "$cmd" ] ; then
-    print_version
-    echo
-    fatal "Run $ $progname --help for get help"
+    if [ -t 0 ] ; then
+        print_version
+        echo
+        fatal "Run $ $progname --help for get help"
+    else
+        process_stdin
+        exit $?
+    fi
 fi
 
 case $cmd in
@@ -101,50 +180,11 @@ case $cmd in
         ;;
 esac
 
-# TODO: check ext
-# TODO: check file existence
-# TODO: check by content
 for f in "$@" ; do
-    TYPE=$(get_archive_ext "$f") || TYPE=$(is_plain_text "$f") || { warning "Skipping unrecognized $f" ; continue ; }
-    case $TYPE in
-        gz)
-            if is_command pigz ; then
-                regular_unpack "$f" pigz pigz -dc
-            else
-                regular_unpack "$f" gunzip gzip -c
-            fi
-            ;;
-        bz2)
-            if is_command pbzip2 ; then
-                regular_unpack "$f" pbzip2 pbzip2 -dc
-            else
-                regular_unpack "$f" bzcat bzip2
-            fi
-            ;;
-        xz)
-            if is_command pixz ; then
-                docmd pixz -d < "$f"
-            else
-                regular_unpack "$f" xzcat xz
-            fi
-            ;;
-        Z|compress)
-            regular_unpack "$f" zcat gzip
-            ;;
-        lzma)
-            regular_unpack "$f" lzcat xz
-            ;;
-        zst|zstd)
-            regular_unpack "$f" zstdcat zstd
-            ;;
-        lz4)
-            regular_unpack "$f" lz4cat lz4
-            ;;
-        plain)
-            docmd cat "$f" || fatal
-            ;;
-        *)
-            fatal "Unsupported compression format $TYPE"
-            ;;
-    esac
+    if [ "$f" = "-" ] ; then
+        process_stdin || fatal
+        continue
+    fi
+    TYPE=$(get_archive_ext "$f") || TYPE=$(detect_by_content "$f") || { warning "Skipping unrecognized $f" ; continue ; }
+    unpack_type "$TYPE" "$f"
 done
