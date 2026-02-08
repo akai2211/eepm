@@ -28,23 +28,22 @@ cd_to_temp_dir()
     cd "$PKGDIR" || fatal
 }
 
-# print a path to the command if exists in $PATH
-if a= type -a type 2>/dev/null >/dev/null ; then
-print_command_path()
+# detect bash
+is_bash()
 {
-    a= type -fpP -- "$1" 2>/dev/null
+    [ -n "$BASH_VERSION" ]
 }
-elif a= which which 2>/dev/null >/dev/null ; then
-    # the best case if we have which command (other ways needs checking)
-    # TODO: don't use which at all, it is a binary, not builtin shell command
+
+# print a path to the command if exists in $PATH
+if is_bash ; then
 print_command_path()
 {
-    a= which -- "$1" 2>/dev/null
+    type -fpP -- "$1" 2>/dev/null
 }
 else
 print_command_path()
 {
-    a= type "$1" 2>/dev/null | sed -e 's|.* /|/|'
+    command -v "$1" 2>/dev/null
 }
 fi
 
