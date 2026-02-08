@@ -460,6 +460,10 @@ case $cmd in
     type)                 # HELPCMD: print type of archive
         get_archive_type "$1" || fatal "Can't recognize $1 as archive"
         ;;
+    basename)             # HELPCMD: print the predicted directory name for the archive
+        nm="$(get_archive_name "$1")" || fatal "Can't recognize $1 as archive"
+        basename "$nm"
+        ;;
     diff)                 # HELPCMD: compare two archive
         # check 2 arg
         docmd patool $verbose diff "$@"
