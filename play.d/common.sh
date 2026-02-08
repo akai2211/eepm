@@ -617,7 +617,7 @@ esac
 
 # --update/--run
 
-is_supported_arch "$(epm print info -a)" || fatal "Only '$SUPPORTEDARCHES' architectures is supported"
+is_supported_arch "$SYSTEMARCH" || fatal "Only '$SUPPORTEDARCHES' architectures is supported"
 
 #epm tool estrlist has_space "$PKGNAME" && fatal "play.d/common does not support a new packages in PKGNAME at all!"
 
