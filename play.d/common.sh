@@ -58,6 +58,13 @@ is_url()
     echo "$1" | grep -q "^[filehtps]*:/"
 }
 
+# return major epm version (e.g. 3.64 from 3.64.49)
+epm_major_version()
+{
+    local ver="${EPMVERSION%%-*}"
+    echo "${ver%.*}"
+}
+
 
 #__showcmd_shifted()
 #{
@@ -203,11 +210,10 @@ snap_get_version()
 load_latest_version()
 {
     local line
-    local epmver="$(epm --short --version 2>/dev/null)"
+    local epmver="$(epm_major_version)"
     local URL
     VERSION=""
     RELEASE=""
-    epmver=$(echo "$epmver" | sed -e 's|\.[0-9]*$||')
     for URL in "https://eepm.ru/releases/$epmver/app-versions" ; do
         echo "Getting latest version from $URL/$1 ..." >&2
         line="$(eget -q -O- "$URL/$1" 2>/dev/null)" || continue
