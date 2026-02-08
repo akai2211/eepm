@@ -262,7 +262,7 @@ test_archive()
 
 }
 
-__repack_zip_tar()
+__repack_via_tmp()
 {
 	sfile="$(realpath -s "$1")"
 	dfile="$(realpath -s "$2")"
@@ -296,11 +296,8 @@ repack_archive()
 		tar.*-tar.*)
 			docmd $HAVE_7Z x -so "$1" | $HAVE_7Z a -si "$2"
 			;;
-		zip-tar)
-			__repack_zip_tar "$1" "$2"
-			;;
 		*)
-			fatal "Not yet supported repack $ftype to $ttype archives in 7z mode (try install patool)"
+			__repack_via_tmp "$1" "$2"
 			;;
 	esac
 
