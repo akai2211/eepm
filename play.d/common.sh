@@ -135,11 +135,10 @@ override_pkgname()
 install_pkgurl()
 {
     local repack=''
-    local pkgtype="$(epm print info -p)"
 
     # we have workaround for their postinstall script, so always repack rpm package
     # TODO: repack for deb systems too
-    [ "$pkgtype" = "rpm" ] && repack='--repack'
+    [ "$PKGFORMAT" = "rpm" ] && repack='--repack'
 
     [ -n "$PKGURL" ] || fatal "Can't get package URL. Try use epm play --latest <app> to get latest version."
 
@@ -155,11 +154,10 @@ install_pkgurl()
 install_pack_pkgurl()
 {
     local repack=''
-    local pkgtype="$(epm print info -p)"
 
     # we have workaround for their postinstall script, so always repack rpm package
     # TODO: repack for deb systems too
-    [ "$pkgtype" = "rpm" ] && repack='--repack'
+    [ "$PKGFORMAT" = "rpm" ] && repack='--repack'
 
     [ -n "$PKGURL" ] || fatal "Can't get package URL. Try use epm play --latest <app> to get latest version."
 
@@ -548,9 +546,8 @@ esac
 [ -n "$PRODUCTALT" ] && check_alternative_pkgname
 [ -n "$PKGNAME" ] || fatal "Can't get PKGNAME"
 
-pkgtype="$(epm print info -p)"
 # deb targets always in low case
-[ "$pkgtype" = "deb" ] && PKGNAME="$(echo $PKGNAME | tr "[A-Z]" "[a-z]")"
+[ "$PKGFORMAT" = "deb" ] && PKGNAME="$(echo $PKGNAME | tr "[A-Z]" "[a-z]")"
 
 
 case "$1" in
