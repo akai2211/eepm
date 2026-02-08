@@ -653,23 +653,24 @@ check_filenames()
 {
     local opt
     for opt in "$@" ; do
-        # files can be with full path or have extension via .
-        if [ -f "$opt" ] && rhas "$opt" "[/\.]" ; then
-            has_space "$opt" && warning 'There are space(s) in filename $opt, it is not supported. Skipped' && continue
-            # resolve symlinks for correct access check by root
-            opt="$(realpath "$opt" 2>/dev/null)" || continue
-            [ -n "$pkg_files" ] && pkg_files="$pkg_files $opt" || pkg_files="$opt"
-        elif [ -d "$opt" ] ; then
+        if [ -d "$opt" ] ; then
             has_space "$opt" && warning 'There are space(s) in directory path $opt, it is not supported. Skipped' && continue
             [ -n "$pkg_dirs" ] && pkg_dirs="$pkg_dirs $opt" || pkg_dirs="$opt"
         elif is_url "$opt" ; then
             has_space "$opt" && warning 'There are space(s) in URL $opt, it is not supported. Skipped' && continue
             [ -n "$pkg_urls" ] && pkg_urls="$pkg_urls $opt" || pkg_urls="$opt"
-        # hack, TODO: reasons
-        elif is_abs_path "$opt" && ! rhas "$opt" "[()]" ; then
+        # files can be with full path or have extension via .
+        # hack for abs path: TODO: reasons
+        elif { [ -f "$opt" ] && rhas "$opt" "[/\.]" ; } || { is_abs_path "$opt" && ! rhas "$opt" "[()]" ; } ; then
             has_space "$opt" && warning 'There are space(s) in filename $opt, it is not supported. Skipped' && continue
             # resolve symlinks for correct access check by root
-            opt="$(realpath "$opt" 2>/dev/null)" || continue
+            local resolved
+            resolved="$(realpath "$opt" 2>/dev/null)" || continue
+            if has_space "$resolved" ; then
+                warning "Resolved path of $opt has space(s), using symlink path"
+            else
+                opt="$resolved"
+            fi
             [ -n "$pkg_files" ] && pkg_files="$pkg_files $opt" || pkg_files="$opt"
         else
             has_space "$opt" && warning 'There are space(s) in package name $opt, it is not supported. Skipped.' && continue
