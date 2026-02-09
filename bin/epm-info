@@ -21,24 +21,13 @@ load_helper epm-query
 
 epm_info_help()
 {
-    message '
-epm info - print package information
-Usage: epm info [options] <package>
-
-Options:
-  -h, --help        show this help
-  --requires        print package requires (dependencies)
-  --provides        print package provides
-  --conflicts       print package conflicts
-  --obsoletes       print packages obsoleted by this package
-  --recommends      print recommended packages
-  --suggests        print suggested packages
-  --changelog       print package changelog
-  --whatdepends     print packages that depend on this
-  --whatprovides    print packages that provide the target
-
-Without options prints general package information.
-'
+    message 'epm info - print package information
+Usage: epm info [options] <package>'
+    echo ''
+    echog 'Options:'
+    get_help HELPOPT $SHAREDIR/epm-info
+    echo ''
+    info 'Without options prints general package information.'
 }
 
 __epm_info_rpm_low()
@@ -195,51 +184,51 @@ esac
 epm_info()
 {
     case "$pkg_options" in
-        -h|--help)
+        -h|--help)            # HELPOPT: show this help
             epm_info_help
             return
             ;;
-        --requires)
+        --requires)           # HELPOPT: print package requires (dependencies)
             load_helper epm-requires
             epm_requires
             return
             ;;
-        --provides)
+        --provides)           # HELPOPT: print package provides
             load_helper epm-provides
             epm_provides
             return
             ;;
-        --conflicts)
+        --conflicts)          # HELPOPT: print package conflicts
             load_helper epm-conflicts
             epm_conflicts
             return
             ;;
-        --obsoletes)
+        --obsoletes)          # HELPOPT: print packages obsoleted by this package
             load_helper epm-info_obsoletes
             epm_info_obsoletes
             return
             ;;
-        --recommends)
+        --recommends)         # HELPOPT: print recommended packages
             load_helper epm-info_recommends
             epm_info_recommends
             return
             ;;
-        --suggests)
+        --suggests)           # HELPOPT: print suggested packages
             load_helper epm-info_suggests
             epm_info_suggests
             return
             ;;
-        --changelog)
+        --changelog)          # HELPOPT: print package changelog
             load_helper epm-changelog
             epm_changelog
             return
             ;;
-        --whatdepends)
+        --whatdepends)        # HELPOPT: print packages that depend on this
             load_helper epm-whatdepends
             epm_whatdepends
             return
             ;;
-        --whatprovides)
+        --whatprovides)       # HELPOPT: print packages that provide the target
             load_helper epm-whatprovides
             epm_whatprovides
             return
