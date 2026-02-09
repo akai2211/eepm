@@ -68,22 +68,17 @@ EOF
 
 __epm_create_fake_help()
 {
-message '
-
-epm create-fake - create package with fake provides and requires. Use follow params:
-    --install                - auto install fake package
-    --version=*              - set package version (by default version is 0)
-    --release=*              - set package release (by default release is 0)
-    --requires=*             - set package requires
-    --provides=*             - set package provides (by default package provide only it self)
-
+    message 'epm create-fake - create package with fake provides and requires
+Usage: epm create-fake [options] <package-name>'
+    echo ''
+    echog 'Options:'
+    get_help HELPOPT $SHAREDIR/epm-create_fake
+    message '
 Examples:
     # epm create-fake --install python-somepackage
     # epm create-fake --install --provides="python3dist(somepackage)" python-somepackage
     # epm create-fake --install --requires=python3 --requires=python3-module python-somepackage
-
 '
-    return
 }
 
 epm_create_fake()
@@ -95,28 +90,29 @@ epm_create_fake()
 
   for i in "$@"; do
     case $i in
-      --version=*)
-      VERSION="${i#*=}"
-      shift # past argument
-      ;;
-      --release=*)
-      RELEASE="${i#*=}"
-      shift # past argument
-      ;;
-      --requires=*)
-      REQUIRES+=" ${i#*=}"
-      shift # past argument
-      ;;
-      --provides=*)
-      PROVIDES+=" ${i#*=}"
-      shift # past argument
-      ;;
-      --help|-h)
+      -h|--help)          # HELPOPT: show this help
       __epm_create_fake_help
       return
       ;;
+      --install)          # HELPOPT: auto install fake package
+      ;;
+      --version=*)        # HELPOPT: set package version (default: 0)
+      VERSION="${i#*=}"
+      shift
+      ;;
+      --release=*)        # HELPOPT: set package release (default: 0)
+      RELEASE="${i#*=}"
+      shift
+      ;;
+      --requires=*)       # HELPOPT: set package requires
+      REQUIRES+=" ${i#*=}"
+      shift
+      ;;
+      --provides=*)       # HELPOPT: set package provides
+      PROVIDES+=" ${i#*=}"
+      shift
+      ;;
       *)
-            # unknown option
       ;;
     esac
   done
