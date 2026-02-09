@@ -1437,8 +1437,8 @@ __epm_suggest_similar_packages()
     similar="$(fzf -f "$pkg" < "$cache" 2>/dev/null | head -$count)"
     [ -z "$similar" ] && return 1
 
-    # Interactive selection if enabled
-    if [ -n "$suggest_interactive" ] && inputisatty ; then
+    # Interactive selection if enabled (via config or --interactive flag)
+    if [ -n "$suggest_interactive$interactive" ] && inputisatty ; then
         local selected
         selected="$(echo "$similar" | fzf --prompt="Select package: " --height=10 --reverse)"
         if [ -n "$selected" ] ; then
@@ -1448,10 +1448,10 @@ __epm_suggest_similar_packages()
         return 1
     fi
 
-    # Non-interactive: just show suggestions
-    echo ""
-    info "Perhaps you meant:"
-    echo "$similar" | sed 's/^/  /'
+    # Non-interactive: just show suggestions (to stderr)
+    echo "" >&2
+    echog "Perhaps you meant:" >&2
+    echo "$similar" | sed 's/^/  /' >&2
     return 1
 }
 

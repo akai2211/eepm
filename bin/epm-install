@@ -174,7 +174,13 @@ epm_install_names()
             if [ "$res" = 0 ] ; then
                 save_installed_packages $@
             elif [ "$res" = 100 ] ; then
-                __epm_suggest_similar_packages_by_list $@
+                local selected
+                selected="$(__epm_suggest_similar_packages_by_list $@)"
+                if [ -n "$selected" ] ; then
+                    info "Installing selected: $selected"
+                    epm_install $selected
+                    return $?
+                fi
             fi
             return $res ;;
         apm-rpm)
@@ -303,12 +309,28 @@ epm_ni_install_names()
         apt-rpm)
             sudocmd apt-get -y $noremove --force-yes -o APT::Install::VirtualVersion=true -o APT::Install::Virtual=true -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" $APTOPTIONS install $@
             local res=$?
-            [ "$res" = 100 ] && __epm_suggest_similar_packages_by_list $@
+            if [ "$res" = 100 ] ; then
+                local selected
+                selected="$(__epm_suggest_similar_packages_by_list $@)"
+                if [ -n "$selected" ] ; then
+                    info "Installing selected: $selected"
+                    epm_ni_install_names $selected
+                    return $?
+                fi
+            fi
             return $res ;;
         apt-dpkg)
             sudocmd env ACCEPT_EULA=y DEBIAN_FRONTEND=noninteractive apt-get -y $noremove --force-yes -o APT::Install::VirtualVersion=true -o APT::Install::Virtual=true -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" $APTOPTIONS install $@
             local res=$?
-            [ "$res" = 100 ] && __epm_suggest_similar_packages_by_list $@
+            if [ "$res" = 100 ] ; then
+                local selected
+                selected="$(__epm_suggest_similar_packages_by_list $@)"
+                if [ -n "$selected" ] ; then
+                    info "Installing selected: $selected"
+                    epm_ni_install_names $selected
+                    return $?
+                fi
+            fi
             return $res ;;
         apm-rpm)
             sudocmd apm system install $@
