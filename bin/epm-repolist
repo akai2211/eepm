@@ -21,15 +21,11 @@ load_helper epm-sh-altlinux
 
 epm_repolist_help()
 {
-    message '
-epm repo list - list package repositories
-Usage: epm repo list [options] [pattern]
-
-Options:
-  -a, --all             show all repos (including disabled/commented)
-  --regex               use pattern as raw regex (no glob conversion)
-  pattern               filter repos by pattern (glob: * ?)
-'
+    message 'epm repo list - list package repositories
+Usage: epm repo list [options] [pattern]'
+    echo ''
+    echog 'Options:'
+    get_help HELPOPT $SHAREDIR/epm-repolist
 }
 
 __print_apt_sources_list()
@@ -166,10 +162,16 @@ print_apt_sources_list()
 epm_repolist()
 {
 
-if [ "$1" = "-h" ] || [ "$1" = "--help" ] ; then
-    epm_repolist_help
-    return
-fi
+case "$1" in
+    -h|--help)            # HELPOPT: show this help
+        epm_repolist_help
+        return
+        ;;
+    -a|--all)             # HELPOPT: show all repos (including disabled/commented)
+        ;;
+    --regex)              # HELPOPT: use pattern as raw regex (no glob conversion)
+        ;;
+esac
 
 # TODO
 [ -z "$*" ] || [ "$PMTYPE" = "apt-rpm" ] || [ "$PMTYPE" = "apm-rpm" ] || [ "$PMTYPE" = "apt-dpkg" ] || fatal "No arguments are allowed here"
