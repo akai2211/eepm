@@ -14,10 +14,10 @@ pkgtype=$(epm print info -p)
 arch="$(epm print info -a)"
 case "$pkgtype-$arch" in
     rpm-x86_64)
-        PKGURL="$(get_json_value "https://download-center.epson.com/api/v1/modules/?device_id=DS-770&os=RPM&region=RU&language=en" '["items",1,"url"]')"
+        PKGURL="$(get_json_value "https://download-center.epson.com/api/v1/modules/?device_id=DS-770&os=RPM&region=RU&language=en" '["items",2,"url"]')"
         ;;
     *-x86_64)
-        PKGURL="$(get_json_value "https://download-center.epson.com/api/v1/modules/?device_id=DS-770&os=DEBX64&region=RU&language=en" '["items",1,"url"]')"
+        PKGURL="$(get_json_value "https://download-center.epson.com/api/v1/modules/?device_id=DS-770&os=DEBX64&region=RU&language=en" '["items",2,"url"]')"
         ;;
     *)
         fatal "$arch arch is not supported"
