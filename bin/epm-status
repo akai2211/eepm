@@ -325,21 +325,11 @@ epm_status_thirdparty()
 
 epm_status_help()
 {
-    message '
-
-epm status - check status of the package and return result via exit code
-Usage: epm status [options] <package> [version]
-
-Options:
-  --installed [version] check if <package> is installed (if version is specified, not older than the version)
-  --installable         check if <package> can be installed from the repo
-  --original            check if <package> is from distro repo
-  --certified           check if <package> is certified that it can be installed without repacking
-  --thirdparty          check if <package> from a third-party source (didn'\''t packed for this distro)
-  --repacked            check if <package> was repacked with epm repack
-  --validate            check if <package> is accessible (we can get a fields from it)
-  --supported           check if distribution is supported by epm status
-'
+    message 'epm status - check status of the package and return result via exit code
+Usage: epm status [options] <package> [version]'
+    echo ''
+    echog 'Options:'
+    get_help HELPOPT $SHAREDIR/epm-status
 }
 
 epm_status()
@@ -355,40 +345,48 @@ epm_status()
 
     # TODO: allow both option
     case "$option" in
-        -h|--help)
+        -h|--help)            # HELPOPT: show this help
             epm_status_help
             return
             ;;
-        --installed)
+        --installed)          # HELPOPT: check if package is installed (not older than version if specified)
             epm_status_installed "$@"
             return
             ;;
-        --original)
-            epm_status_original "$@"
-            return
-            ;;
-        --certified|--allowed-scripts)
-            epm_status_certified "$@"
-            return
-            ;;
-         --third-party|--thirdparty|--thirdpart)
-            epm_status_thirdparty "$@"
-            return
-            ;;
-        --repacked)
-            epm_status_repacked "$@"
-            return
-            ;;
-        --validate)
-            epm_status_validate "$@"
-            return
-            ;;
-        --installable)
+        --installable)        # HELPOPT: check if package can be installed from the repo
             epm_status_installable "$@"
             return
             ;;
-        --supported)
+        --original)           # HELPOPT: check if package is from distro repo
+            epm_status_original "$@"
+            return
+            ;;
+        --certified)          # HELPOPT: check if package is certified for install without repacking
+            epm_status_certified "$@"
+            return
+            ;;
+        --thirdparty)         # HELPOPT: check if package is from a third-party source
+            epm_status_thirdparty "$@"
+            return
+            ;;
+        --repacked)           # HELPOPT: check if package was repacked with epm repack
+            epm_status_repacked "$@"
+            return
+            ;;
+        --validate)           # HELPOPT: check if package is accessible (we can get fields from it)
+            epm_status_validate "$@"
+            return
+            ;;
+        --supported)          # HELPOPT: check if distribution is supported by epm status
             epm_status_supported
+            return
+            ;;
+        --allowed-scripts|--third-party|--thirdpart)
+            # aliases handled by corresponding options above
+            case "$option" in
+                --allowed-scripts) epm_status_certified "$@" ;;
+                *) epm_status_thirdparty "$@" ;;
+            esac
             return
             ;;
         -*)
