@@ -38,7 +38,7 @@ is_service_running()
             sudorun $INITDIR/$1 status >/dev/null 2>/dev/null
             ;;
         systemd)
-            a='' systemctl status $1 >/dev/null 2>/dev/null
+            $SYSTEMCTL $SYSTEMCTL_ARGS status $1 >/dev/null 2>/dev/null
             ;;
         runit)
             sudorun sv status "$SERVICE" >/dev/null 2>/dev/null
@@ -68,7 +68,7 @@ is_service_autostart()
             test -L "$(echo /etc/rc5.d/S??$1)"
             ;;
         systemd)
-            a='' systemctl is-enabled $1
+            $SYSTEMCTL $SYSTEMCTL_ARGS is-enabled $1
             ;;
         runit)
             test -L "/var/service/$SERVICE"

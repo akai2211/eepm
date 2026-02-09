@@ -51,10 +51,10 @@ serv_log()
         systemd)
             if [ "$1" = "-f" ] ; then
                 shift
-                sudocmd journalctl -f -u "$SERVICE" "$@"
+                $SYSTEMCTL_RUNNER journalctl $SYSTEMCTL_ARGS -f -u "$SERVICE" "$@"
             else
                 # -e to jump to end of log
-                sudocmd journalctl -e -u "$SERVICE" "$@"
+                $SYSTEMCTL_RUNNER journalctl $SYSTEMCTL_ARGS -e -u "$SERVICE" "$@"
             fi
             ;;
         *)
