@@ -31,8 +31,8 @@
   - `FULL_TEST`: полный прогон по IPFS на `alt:sisyphus` и `debian:bookworm`,
     включает `CI_DOWNLOAD`, `CI_USE_IPFS` и `CI_IPFS_UPDATE`, тестирует все
     приложения.
-  - `GET_VERSION`: сбор версий на `alt:p11`, без IPFS-стадий, тестирует все
-    приложения.
+  - `GET_VERSION`: сбор версий на `alt:p11`, включает `CI_USE_IPFS` и
+    `CI_IPFS_UPDATE`, тестирует все приложения.
 - `CI_APPS`: список приложений для теста, разделенный пробелами.
   - Пример: `CI_APPS=firefox chrome`
   - Если пусто или не задано, берутся все приложения из `epm play --short`.
@@ -64,10 +64,16 @@
 - `CI_DOWNLOAD`: включает стадии загрузки и публикации IPFS базы.
 - `CI_USE_IPFS`: включает флаг `--ipfs` для `epm play`.
 - `CI_IPFS_UPDATE`: включает обновление IPFS базы во время теста.
+  - При включенном `CI_IPFS_UPDATE` и отсутствии `ipfs` устанавливается `kubo`.
+  - Для обновления базы используется внешний IPFS API:
+    `/ip4/91.232.225.49/tcp/5001`.
 
 Куда попадают результаты
 - `FULL_TEST`: `epm-play-ci-results/epm-results`.
 - `GET_VERSION`: `epm-play-ci-results/version`.
+  - Версия EPM: `version/ALTLinux-p11/epm-play-versions/eepm`.
+  - IPFS база: `version/ALTLinux-p11/eget-ipfs-db.txt`.
+  - Список приложений: `version/ALTLinux-p11/epm-play-list.txt`.
 - Любые пользовательские тесты: `epm-play-ci-results/experiments`.
 
 Метки коммитов результатов

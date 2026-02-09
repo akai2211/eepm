@@ -34,8 +34,8 @@ if [ -n "$FULL_TEST" ]; then
 elif [ -n "$GET_VERSION" ]; then
   systems="alt:p11"
   USE_DOWNLOAD=0
-  USE_IPFS=0
-  USE_IPFS_UPDATE=0
+  USE_IPFS=1
+  USE_IPFS_UPDATE=1
   CI_APPS=""
   RESULTS_DIR="version"
   RESULTS_LABEL="get-version"
