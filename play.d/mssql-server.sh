@@ -22,12 +22,9 @@ dversion="$(epm print info -v)"
 
 case "$(epm print info -e)" in
   AstraLinuxSE/1.7)
-    DEBREPO="deb http://ftp.ru.debian.org/debian/ stretch main"
-    # we have libc++1-9, but this package requires libc++1
-    epm ar $DEBREPO ; epm update
+    # libc++1 is available in Astra repos, no need for external Debian repo
     epm install libc++1
-    epm install https://packages.microsoft.com/ubuntu/20.04/mssql-server-2019/pool/main/m/mssql-server/mssql-server_1*_amd64.deb
-    epm rr $DEBREPO ; epm update
+    epm install --repack https://packages.microsoft.com/ubuntu/18.04/mssql-server-2019/pool/main/m/mssql-server/mssql-server_1*_amd64.deb
     ;;
   AstraLinuxSE/1.8)
     epm install https://packages.microsoft.com/debian/12/mssql-server-2019/pool/main/m/mssql-server/mssql-server_1*_amd64.deb
