@@ -43,6 +43,9 @@ case "$(epm print info -e)" in
     ;;
 esac
 
+# fix ownership after install/repack (mssql-conf setup needs write access)
+esu chown -R mssql:mssql /var/opt/mssql/
+
 if [ -z "$auto" ] ; then
     esu /opt/mssql/bin/mssql-conf setup accept-eula
     serv mssql-server on
