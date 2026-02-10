@@ -320,6 +320,10 @@ epm_ni_install_names()
         pacman)
             sudocmd pacman -S --noconfirm $nodeps $@
             return ;;
+        aur-pacman)
+            load_helper epm-install-arch
+            __epm_ni_install_from_aur $@
+            return ;;
         yay)
             docmd yay --noconfirm $nodeps $@
             return ;;

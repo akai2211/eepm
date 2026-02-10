@@ -21,6 +21,64 @@
 # Args: package names
 __epm_install_from_aur()
 {
+    # Try AUR helpers in order of popularity
+    if is_command yay ; then
+        docmd yay -S "$@"
+        return
+    fi
+
+    if is_command paru ; then
+        docmd paru -S "$@"
+        return
+    fi
+
+    if is_command pikaur ; then
+        docmd pikaur -S "$@"
+        return
+    fi
+
+    if is_command trizen ; then
+        docmd trizen -S "$@"
+        return
+    fi
+
+    # Fallback to manual makepkg
+    info "No AUR helper found (yay, paru, pikaur, trizen), using makepkg..."
+    __epm_install_from_aur_makepkg "$@"
+}
+
+# Non interactive install packages from Arch User Repository
+# Args: package names
+__epm_ni_install_from_aur()
+{
+    # Try AUR helpers in order of popularity
+    if is_command yay ; then
+        docmd yay --noconfirm -S "$@"
+        return
+    fi
+
+    if is_command paru ; then
+        docmd paru --noconfirm -S "$@"
+        return
+    fi
+
+    if is_command pikaur ; then
+        docmd pikaur --noconfirm -S "$@"
+        return
+    fi
+
+    if is_command trizen ; then
+        docmd trizen --noconfirm -S "$@"
+        return
+    fi
+
+    # Fallback to manual makepkg
+    info "No AUR helper found (yay, paru, pikaur, trizen), using makepkg..."
+    __epm_install_from_aur_makepkg "$@"
+}
+
+__epm_install_from_aur_makepkg()
+{
     local pkg
 
     assure_exists git
