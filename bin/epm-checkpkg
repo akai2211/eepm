@@ -33,7 +33,22 @@ check_pkg_integrity()
     rpm)
         assure_exists rpm
         __rpm_allows_nosignature && NOSIGNATURE="--nosignature" || NOSIGNATURE="--nogpg"
-        docmd rpm --checksig $NOSIGNATURE $PKG
+        if docmd rpm --checksig $NOSIGNATURE $PKG ; then
+            return 0
+        fi
+        # Fallback: verify only digests via verbose output (for packages built in other distros)
+        local kv_out
+        kv_out="$(docmd rpm -Kv $NOSIGNATURE "$PKG" 2>&1)"
+        if echo "$kv_out" | grep -q "digest: BAD" ; then
+            echo "$kv_out"
+            return 1
+        fi
+        if echo "$kv_out" | grep -q "digest: OK" ; then
+            info "Package $PKG integrity check passed (digests are OK)"
+            return 0
+        fi
+        echo "$kv_out"
+        return 1
         ;;
     deb)
         assure_exists dpkg
