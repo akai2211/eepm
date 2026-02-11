@@ -479,6 +479,7 @@ check_command()
         ;;
     ei|ik|epminstall|epm-install|selfinstall) # HELPCMD: install package(s) from Korinf (eepm by default)
         epm_cmd=epm_install
+        direct_args=1
         ;;
     print)                    # HELPCMD: print various info, run epm print help for details
         epm_cmd=print
