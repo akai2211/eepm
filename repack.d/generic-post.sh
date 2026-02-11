@@ -17,13 +17,21 @@ add_libs_requires
 rm -f "$BUILDROOT/.eepm_ignore_lib_requires"
 rm -f "$BUILDROOT/.eepm_stop_libs_requires"
 
-# print warning about forbidded paths
+# remove forbidden paths owned by the filesystem package to avoid conflicts
 # https://bugzilla.altlinux.org/show_bug.cgi?id=38842
-for i in / /etc /etc/init.d /etc/systemd /bin /opt /usr /usr/bin /usr/lib /usr/lib64 /usr/share /usr/share/doc /var /var/log /var/run \
-        /etc/cron.daily /usr/share/pixmaps /usr/share/man /usr/share/man/man1 /usr/share/appdata /usr/share/applications /usr/share/menu \
-        /usr/share/mime /usr/share/mime/icons /usr/share/mime/packages /usr/share/icons \
-        /usr/share/icons/gnome \
-        /usr/share/icons/hicolor ; do
+for i in / /bin /sbin /opt \
+        /etc /etc/init.d /etc/systemd /etc/opt /etc/sysconfig /etc/default /etc/cron.daily \
+        /etc/xdg /etc/xdg/autostart \
+        /lib /lib64 /lib/systemd /lib/systemd/system \
+        /usr /usr/bin /usr/sbin /usr/lib /usr/lib64 /usr/libexec \
+        /usr/share /usr/share/doc /usr/share/fonts /usr/share/info /usr/share/sounds \
+        /usr/share/pixmaps /usr/share/man /usr/share/man/man1 /usr/share/appdata /usr/share/applications /usr/share/menu \
+        /usr/share/mime /usr/share/mime/icons /usr/share/mime/packages \
+        /usr/share/icons /usr/share/icons/gnome /usr/share/icons/hicolor \
+        /usr/share/icons/hicolor/16x16 /usr/share/icons/hicolor/16x16/apps \
+        /usr/share/icons/hicolor/32x32 /usr/share/icons/hicolor/32x32/apps \
+        /usr/share/icons/hicolor/48x48 /usr/share/icons/hicolor/48x48/apps \
+        /var /var/cache /var/lib /var/log /var/opt /var/run ; do
     sed \
         -e "s|/\./|/|" \
         -e "s|^%dir[[:space:]]\"$i/*\"$||" \
