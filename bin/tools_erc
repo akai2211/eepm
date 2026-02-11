@@ -73,6 +73,15 @@ create_archive()
 	esac
 }
 
+# Extract archive with 7z into subdir
+extract_7z_to_subdir()
+{
+	local arc="$1"
+	local subdir="$2"
+	mkdir -p "$subdir" && cd "$subdir" || fatal
+	docmd $HAVE_7Z x "$arc"
+}
+
 # Extract squashfs-based archives (squashfs, snap)
 extract_squashfs_image()
 {
@@ -81,8 +90,7 @@ extract_squashfs_image()
 	if is_command unsquashfs ; then
 		docmd unsquashfs -d "$subdir" "$arc"
 	else
-		mkdir -p "$subdir" && cd "$subdir" || fatal
-		docmd $HAVE_7Z x "$arc"
+		extract_7z_to_subdir "$arc" "$subdir"
 	fi
 }
 
@@ -105,8 +113,7 @@ extract_appimage()
 	fi
 
 	# Fallback to 7z
-	mkdir -p "$subdir" && cd "$subdir" || fatal
-	docmd $HAVE_7Z x "$arc"
+	extract_7z_to_subdir "$arc" "$subdir"
 
 	# Fallback to --appimage-extract (disabled by default)
 	#if [ -x "$arc" ] || chmod +x "$arc" ; then
@@ -119,6 +126,32 @@ extract_appimage()
 	#fi
 }
 
+# TODO: move to patool
+# Extract special archive types that are not supported by patool
+extract_special_archive()
+{
+	local arc="$1"
+	local type="$2"
+	local rarc="$(realpath -s "$arc")"
+	local subdir="$(basename "$(get_archive_name "$arc")")"
+
+	case "$type" in
+		exe|dll)
+			extract_7z_to_subdir "$rarc" "$subdir"
+			;;
+		AppImage|appimage)
+			extract_appimage "$rarc" "$subdir"
+			;;
+		squashfs|snap)
+			extract_squashfs_image "$rarc" "$subdir"
+			;;
+		*)
+			return 1
+			;;
+	esac
+	exit
+}
+
 extract_archive()
 {
 	local arc="$1"
@@ -127,40 +160,10 @@ extract_archive()
 	local type="$(get_archive_type "$arc")"
 	[ -n "$type" ] || fatal "Can't recognize type of $arc."
 
-	local rarc="$(realpath -s "$arc")"
-
-	# TODO: move to patool
-	if [ "$type" = "exe" ] ; then
-		local subdir="$(basename "$arc" .exe)"
-		mkdir -p "$subdir" && cd "$subdir" || fatal
-		docmd $HAVE_7Z x "$rarc"
-		exit
-	fi
-
-	if [ "$type" = "dll" ] ; then
-		local subdir="$(basename "$arc" .dll)"
-		mkdir -p "$subdir" && cd "$subdir" || fatal
-		docmd $HAVE_7Z x "$rarc"
-		exit
-	fi
-
-	if [ "$type" = "AppImage" ] || [ "$type" = "appimage" ] ; then
-		extract_appimage "$rarc" "$(basename "$(basename "$arc" .AppImage)" .appimage)"
-		exit
-	fi
-
-	if [ "$type" = "squashfs" ] ; then
-		extract_squashfs_image "$rarc" "$(basename "$arc" .squashfs)"
-		exit
-	fi
-
-	if [ "$type" = "snap" ] ; then
-		extract_squashfs_image "$rarc" "$(basename "$arc" .snap)"
-		exit
-	fi
+	extract_special_archive "$arc" "$type"
 
 	if have_patool ; then
-        docmd patool $verbose extract "$arc" "$@"
+		docmd patool $verbose extract "$arc" "$@"
 		return
 	fi
 
