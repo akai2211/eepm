@@ -28,7 +28,6 @@ case "$pkgtype" in
         esac
         asset="flameshot-${VERSION}-${RELEASE}.${debvariant}.amd64.deb"
         ;;
-        ;;
 esac
 
 PKGURL="https://github.com/flameshot-org/flameshot/releases/download/v$VERSION/$asset"
