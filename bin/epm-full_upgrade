@@ -94,7 +94,7 @@ confirm_action()
     confirm_action "Do upgrade epm? [Y/n]" || full_upgrade_no_epm_update_check=1
     if [ -z "$full_upgrade_no_epm_update_check" ] ; then
         if [ "$BASEDISTRNAME" = "alt" ] && epm status --original eepm ; then
-            [ -n "$quiet" ] || info "Checking for new eepm package in the repo..."
+            info "Checking for new eepm package in the repo..."
             epm_version_before=$(epmq eepm 2>/dev/null)
             docmd epm $dryrun install eepm &>/dev/null
             epm_version_after=$(epmq eepm 2>/dev/null)
@@ -102,6 +102,8 @@ confirm_action()
                 info "An update for epm has been found, restarting epm full-upgrade..."
                 exec $PROGDIR/$PROGNAME full-upgrade $orig_args
                 exit 0
+            else
+                info "epm is up to date ($epm_version_before)"
             fi
         else
             load_helper epm-update
