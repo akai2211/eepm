@@ -211,8 +211,12 @@ __check_system()
     fi
 
     if [ "$TO" != "Sisyphus" ] ; then
-        # note: we get --base-version directy to get new version
-        if [ "$($DISTRVENDOR --base-version)" != "$TO" ] || epm installed altlinux-release-sisyphus >/dev/null ; then
+        # skip if /etc/altlinux-release is owned by a branding package
+        local release_pkg="$(__get_conflict_release_pkg)"
+        if [ -n "$release_pkg" ] && rhas "$release_pkg" "^branding-" ; then
+            info 'Skipping altlinux-release-$TO install: /etc/altlinux-release is owned by $release_pkg'
+        elif [ "$($DISTRVENDOR --base-version)" != "$TO" ] || epm installed altlinux-release-sisyphus >/dev/null ; then
+            # note: we get --base-version directly to get new version
             warning 'Current distro still is not $TO, or altlinux-release-sisyphus package is installed.'
             warning 'Trying to fix with altlinux-release-$TO'
             docmd epm install altlinux-release-$TO
