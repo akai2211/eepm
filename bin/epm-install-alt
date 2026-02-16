@@ -272,6 +272,14 @@ epm_install_alt_kernel_module()
 
 epm_install_alt_names()
 {
+    [ -z "$1" ] && return
+
+    # check repo/package syntax (p10/pkg, sisyphus/pkg)
+    if __has_repo_syntax "$@" ; then
+        __process_repo_arguments epm_install_alt_names "$@"
+        return
+    fi
+
     local kmlist=''
     local kilist=''
     local installnames=''
@@ -305,10 +313,13 @@ epm_install_alt_names()
     epm_install_alt_kernel_module $kmlist || return
 
     # install kernel images via update-kernel (handles modules automatically)
-    local flavour
-    for flavour in $kilist ; do
-        docmd epm update-kernel -t "$flavour" || return
-    done
+    if [ -n "$kilist" ] ; then
+        load_helper epm-kernel_update
+        local flavour
+        for flavour in $kilist ; do
+            epm_kernel_update -t "$flavour" || return
+        done
+    fi
 }
 
 # Unused hack for apt-repo
@@ -368,10 +379,6 @@ prepare_task_packages()
 # copied from epm_upgrade_alt_tasks()
 epm_install_alt_tasks()
 {
-    load_helper epm-addrepo
-    load_helper epm-reposave
-    load_helper epm-removerepo
-    load_helper epm-update
     load_helper epm-install
 
     prepare_task_packages "$@"
@@ -399,16 +406,8 @@ epm_install_alt_tasks()
     fi
 
     local res
-    try_change_alt_repo
-    epm_addrepo $unique_tasks
-    __epm_update
+    __use_tmp_apt_for_tasks $unique_tasks || return 1
     (pkg_names="$installlist" epm_install)
     res=$?
-    # remove repos one by one (epm_removerepo doesn't handle lists)
-    local task
-    for task in $unique_tasks ; do
-        epm_removerepo $task
-    done
-    end_change_alt_repo
     return $res
 }

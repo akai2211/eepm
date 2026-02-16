@@ -203,7 +203,8 @@ __use_tmp_apt_for_tasks()
     load_helper epm-update
     __setup_tmp_apt_dir
     { __get_system_sourceslist ; __generate_task_sourceslist "$@" ; } > "$__EPM_APT_TMPDIR/sources.list"
-    __epm_update || { warning "Failed to update package index for tasks" ; return 1 ; }
+    # tolerate partial failures (some system repos may have broken GPG keys etc.)
+    __epm_update || warning "Some repos failed to update, but continuing anyway"
 }
 
 # call: __process_repo_arguments <function> args...

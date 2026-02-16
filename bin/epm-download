@@ -243,23 +243,21 @@ __epm_download_alt()
 
     # TODO: enable if install --download-only will works
     if is_taskarg "$@" ; then
-        load_helper epm-addrepo
-        load_helper epm-reposave
-        load_helper epm-removerepo
-        load_helper epm-update
-        load_helper epm-install
+        load_helper epm-sh-backend
+        local task_numbers=""
+        local arg
+        for arg in "$@" ; do
+            local tn="$(get_tasknumber_from_arg "$arg")"
+            [ -n "$tn" ] && task_numbers="$task_numbers $tn"
+        done
 
         local installlist="$(get_task_packages $*)"
         installlist="$(estrlist reg_exclude ".*-devel .*-devel-static .*-checkinstall .*-debuginfo" "$installlist")"
         [ -n "$verbose" ] && info 'Packages from task(s): $installlist'
 
-        try_change_alt_repo
-        epm_addrepo "$@"
-        epm update
-        [ -n "$verbose" ] && epm repo list
-        docmd epm download $print_url $installlist
-        epm_removerepo "$@"
-        end_change_alt_repo
+        __use_tmp_apt_for_tasks $task_numbers || return 1
+        [ -n "$verbose" ] && cat "$__EPM_APT_TMPDIR/sources.list"
+        epm_download $installlist
 
         return
     fi

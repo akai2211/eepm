@@ -89,16 +89,14 @@ __epm_downgrade_to_alt_archive()
 {
     local date="$(echo "$1" | cut -d/ -f2)"
     shift
+    # normalize date: 2023-01-15 -> 2023/01/15
+    local datestr="$(echo "$date" | sed -e 's|-|/|g')"
+    echo "$datestr" | grep -qE "^20[0-3][0-9]/[01][0-9]/[0-3][0-9]$" || fatal "use follow date format: 2017/01/31 or 2017-01-31"
     __epm_add_alt_apt_downgrade_preferences || return
-    load_helper epm-reposave
-    try_change_alt_repo
-    docmd epm repo set archive "$date" || return
-    load_helper epm-update
+    load_helper epm-sh-backend
     load_helper epm-upgrade
-    __epm_update
+    __use_tmp_apt_for_branch archive "$(echo "$DISTRVERSION" | tr '[:upper:]' '[:lower:]')" "$datestr" || return 1
     epm_upgrade "$@"
-    docmd epm repo restore
-    end_change_alt_repo
     __epm_remove_apt_downgrade_preferences
     return
 }
