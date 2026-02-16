@@ -102,11 +102,28 @@ __process_backend_arguments() {
 }
 
 # Generate sources.list content for a given ALT branch
-# arg: branch name (p10, Sisyphus, c10f2, ...)
+# Usage:
+#   __generate_alt_sourceslist <branch>                    - for branch (p10, Sisyphus, c10f2, ...)
+#   __generate_alt_sourceslist archive <branch> <datestr>  - for archive repo
 __generate_alt_sourceslist()
 {
-    local repo="$1"
-    local repolo="$(echo "$repo" | tr "[:upper:]" "[:lower:]")"
+    local baseurl
+    local repopart
+    local repolo
+
+    if [ "$1" = "archive" ] ; then
+        local archbranch="$2"
+        local datestr="$3"
+        repolo="$(echo "$archbranch" | tr "[:upper:]" "[:lower:]")"
+        baseurl="http://ftp.altlinux.org/pub/distributions"
+        repopart="archive/$repolo/date/$datestr"
+    else
+        local repo="$1"
+        repolo="$(echo "$repo" | tr "[:upper:]" "[:lower:]")"
+        baseurl="http://ftp.basealt.ru/pub/distributions"
+        [ "$repolo" = "sisyphus" ] && repopart="Sisyphus" || repopart="$repo/branch"
+        repopart="ALTLinux/$repopart"
+    fi
 
     # sign logic from __get_sign in epm-addrepo
     local sign=""
@@ -118,19 +135,75 @@ __generate_alt_sourceslist()
         rhas "$DISTRVERSION" "^c[0-9]" || sign="[$signname]"
     fi
 
-    local baseurl="http://ftp.basealt.ru/pub/distributions"
-    local repopart
-    [ "$repolo" = "sisyphus" ] && repopart="Sisyphus" || repopart="$repo/branch"
-
     local arch
     for arch in noarch $DISTRARCH ; do
-        echo "rpm $sign $baseurl ALTLinux/$repopart/$arch classic"
+        echo "rpm $sign $baseurl $repopart/$arch classic"
     done
     case $DISTRARCH in
         x86_64)
-            echo "rpm $sign $baseurl ALTLinux/$repopart/x86_64-i586 classic"
+            echo "rpm $sign $baseurl $repopart/x86_64-i586 classic"
             ;;
     esac
+}
+
+# Create a temporary APT directory for isolated repo operations
+__setup_tmp_apt_dir()
+{
+    __EPM_APT_TMPDIR="$(mktemp -d)" || fatal
+    remove_on_exit "$__EPM_APT_TMPDIR"
+    mkdir -p "$__EPM_APT_TMPDIR/lists/partial" "$__EPM_APT_TMPDIR/sourceparts"
+    __EPM_APT_REPO_OPTIONS="-o Dir::Etc::sourcelist=$__EPM_APT_TMPDIR/sources.list -o Dir::Etc::sourceparts=$__EPM_APT_TMPDIR/sourceparts -o Dir::State::lists=$__EPM_APT_TMPDIR/lists -o Dir::Cache::pkgcache=$__EPM_APT_TMPDIR/pkgcache.bin -o Dir::Cache::srcpkgcache=$__EPM_APT_TMPDIR/srcpkgcache.bin"
+}
+
+# Output current system sources.list content to stdout
+__get_system_sourceslist()
+{
+    cat /etc/apt/sources.list 2>/dev/null
+    local f
+    for f in /etc/apt/sources.list.d/*.list ; do
+        [ -s "$f" ] || continue
+        cat "$f"
+    done
+}
+
+# Generate sources.list entries for ALT task repos
+# args: task_number [task_number ...]
+__generate_task_sourceslist()
+{
+    local tn
+    for tn in "$@" ; do
+        local url="https://git.altlinux.org/tasks/$tn/build/repo"
+        url="$(eget --get-real-url "$url")" || { warning "Can't access task $tn repo" ; continue ; }
+        local arch
+        for arch in noarch $DISTRARCH $([ "$DISTRARCH" = "x86_64" ] && echo "x86_64-i586") ; do
+            eget --check-url "$url/$arch/base/" 2>/dev/null || continue
+            local rd="$(eget --list "$url/$arch/RPMS.*" 2>/dev/null)"
+            [ -n "$rd" ] || continue
+            local comp="$(echo "$rd" | sed -e 's|/*$||' -e 's|.*\.||')"
+            [ "$comp" = "*" ] && continue
+            echo "rpm $url $arch $comp"
+        done
+    done
+}
+
+# Setup temporary APT directory with branch repo and run update
+# args: same as __generate_alt_sourceslist
+__use_tmp_apt_for_branch()
+{
+    load_helper epm-update
+    __setup_tmp_apt_dir
+    __generate_alt_sourceslist "$@" > "$__EPM_APT_TMPDIR/sources.list"
+    __epm_update || { warning "Failed to update package index for $1" ; return 1 ; }
+}
+
+# Setup temporary APT directory with system repos + task repos and run update
+# args: task_number [task_number ...]
+__use_tmp_apt_for_tasks()
+{
+    load_helper epm-update
+    __setup_tmp_apt_dir
+    { __get_system_sourceslist ; __generate_task_sourceslist "$@" ; } > "$__EPM_APT_TMPDIR/sources.list"
+    __epm_update || { warning "Failed to update package index for tasks" ; return 1 ; }
 }
 
 # call: __process_repo_arguments <function> args...
@@ -161,14 +234,7 @@ __process_repo_arguments() {
             (PMTYPE=aur-pacman PPARGS=1 $func ${repo_groups[$repo]})
         else
             # ALT Linux: use temporary APT directory instead of modifying system repos
-            load_helper epm-update
-            local tmpaptdir
-            tmpaptdir="$(mktemp -d)" || fatal
-            remove_on_exit "$tmpaptdir"
-            mkdir -p "$tmpaptdir/lists/partial" "$tmpaptdir/sourceparts"
-            __generate_alt_sourceslist "$repo" > "$tmpaptdir/sources.list"
-            __EPM_APT_REPO_OPTIONS="-o Dir::Etc::sourcelist=$tmpaptdir/sources.list -o Dir::Etc::sourceparts=$tmpaptdir/sourceparts -o Dir::State::lists=$tmpaptdir/lists -o Dir::Cache::pkgcache=$tmpaptdir/pkgcache.bin -o Dir::Cache::srcpkgcache=$tmpaptdir/srcpkgcache.bin"
-            __epm_update || { warning "Failed to update package index for $repo" ; return 1 ; }
+            __use_tmp_apt_for_branch "$repo" || return 1
             (PPARGS=1 $func ${repo_groups[$repo]})
         fi
     done
