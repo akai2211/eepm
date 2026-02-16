@@ -91,7 +91,11 @@ esac
             return
         fi
         assure_exists update-kernel update-kernel 0.9.9
-        sudocmd update-kernel $dryrun $(subst_option non_interactive -y) $force $interactive $reinstall $verbose "$@" || return
+        local update_kernel_cmd
+        update_kernel_cmd="update-kernel"
+        # pass temporary APT config to update-kernel (e.g. when installing from another branch)
+        [ -n "$__EPM_APT_TMPDIR" ] && update_kernel_cmd="env APT_CONFIG=$__EPM_APT_TMPDIR/apt.conf update-kernel"
+        sudocmd $update_kernel_cmd $dryrun $(subst_option non_interactive -y) $force $interactive $reinstall $verbose "$@" || return
         return ;;
     esac
 
