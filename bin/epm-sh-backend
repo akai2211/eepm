@@ -101,6 +101,38 @@ __process_backend_arguments() {
     done
 }
 
+# Generate sources.list content for a given ALT branch
+# arg: branch name (p10, Sisyphus, c10f2, ...)
+__generate_alt_sourceslist()
+{
+    local repo="$1"
+    local repolo="$(echo "$repo" | tr "[:upper:]" "[:lower:]")"
+
+    # sign logic from __get_sign in epm-addrepo
+    local sign=""
+    if rhas "$repolo" "^c[0-9]" ; then
+        sign="[cert8]"
+    else
+        [ "$repolo" = "sisyphus" ] && local signname="alt" || local signname="$repolo"
+        # alt c* distr has no alt vendor
+        rhas "$DISTRVERSION" "^c[0-9]" || sign="[$signname]"
+    fi
+
+    local baseurl="http://ftp.basealt.ru/pub/distributions"
+    local repopart
+    [ "$repolo" = "sisyphus" ] && repopart="Sisyphus" || repopart="$repo/branch"
+
+    local arch
+    for arch in noarch $DISTRARCH ; do
+        echo "rpm $sign $baseurl ALTLinux/$repopart/$arch classic"
+    done
+    case $DISTRARCH in
+        x86_64)
+            echo "rpm $sign $baseurl ALTLinux/$repopart/x86_64-i586 classic"
+            ;;
+    esac
+}
+
 # call: __process_repo_arguments <function> args...
 __process_repo_arguments() {
     local func="$1"
@@ -128,16 +160,16 @@ __process_repo_arguments() {
             # Arch Linux AUR
             (PMTYPE=aur-pacman PPARGS=1 $func ${repo_groups[$repo]})
         else
-            # ALT Linux repo switching
+            # ALT Linux: use temporary APT directory instead of modifying system repos
             load_helper epm-update
-            load_helper epm-reposave
-            try_change_alt_repo
-            docmd epm --auto repo set $repo
-            __epm_update
+            local tmpaptdir
+            tmpaptdir="$(mktemp -d)" || fatal
+            remove_on_exit "$tmpaptdir"
+            mkdir -p "$tmpaptdir/lists/partial" "$tmpaptdir/sourceparts"
+            __generate_alt_sourceslist "$repo" > "$tmpaptdir/sources.list"
+            __EPM_APT_REPO_OPTIONS="-o Dir::Etc::sourcelist=$tmpaptdir/sources.list -o Dir::Etc::sourceparts=$tmpaptdir/sourceparts -o Dir::State::lists=$tmpaptdir/lists -o Dir::Cache::pkgcache=$tmpaptdir/pkgcache.bin -o Dir::Cache::srcpkgcache=$tmpaptdir/srcpkgcache.bin"
+            __epm_update || { warning "Failed to update package index for $repo" ; return 1 ; }
             (PPARGS=1 $func ${repo_groups[$repo]})
-            docmd epm repo restore
-            __epm_update
-            end_change_alt_repo
         fi
     done
 }

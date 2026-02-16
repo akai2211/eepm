@@ -183,8 +183,8 @@ case $BASEDISTRNAME in
         UPDATE_LOG="$(mktemp)" || fatal
         remove_on_exit "$UPDATE_LOG"
         local CMDSTATUS="$UPDATE_LOG.status"
-        showcmd apt-get update $APTOPTIONS
-        ( sudorun apt-get update $APTOPTIONS 2>&1 ; echo $? >"$CMDSTATUS" ) | tee "$UPDATE_LOG"
+        showcmd apt-get $__EPM_APT_REPO_OPTIONS update $APTOPTIONS
+        ( sudorun apt-get $__EPM_APT_REPO_OPTIONS update $APTOPTIONS 2>&1 ; echo $? >"$CMDSTATUS" ) | tee "$UPDATE_LOG"
         ret="$(cat "$CMDSTATUS")"
         rm -f "$CMDSTATUS"
         cd - >/dev/null
@@ -200,7 +200,7 @@ case $PMTYPE in
     apt-rpm)
         # TODO: hack against cd to cwd in apt-get on ALT
         cd /
-        sudocmd apt-get update
+        sudocmd apt-get $__EPM_APT_REPO_OPTIONS update
         ret="$?"
         cd - >/dev/null
         return $ret
