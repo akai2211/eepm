@@ -31,6 +31,13 @@ for i in / /bin /sbin /opt \
         /usr/share/icons/hicolor/16x16 /usr/share/icons/hicolor/16x16/apps \
         /usr/share/icons/hicolor/32x32 /usr/share/icons/hicolor/32x32/apps \
         /usr/share/icons/hicolor/48x48 /usr/share/icons/hicolor/48x48/apps \
+        /usr/share/polkit-1 /usr/share/polkit-1/actions /usr/share/polkit-1/rules.d \
+        /usr/share/dbus-1 /usr/share/dbus-1/system.d /usr/share/dbus-1/services /usr/share/dbus-1/system-services \
+        /usr/share/bash-completion /usr/share/bash-completion/completions \
+        /usr/share/fish /usr/share/fish/vendor_completions.d \
+        /usr/share/zsh /usr/share/zsh/site-functions \
+        /usr/share/licenses \
+        /usr/lib/systemd /usr/lib/systemd/system /usr/lib/sysusers.d \
         /var /var/cache /var/lib /var/log /var/opt /var/run ; do
     sed \
         -e "s|/\./|/|" \
@@ -40,6 +47,7 @@ for i in / /bin /sbin /opt \
         -e "s|^$i/*$||" \
         < $SPEC > $SPEC.new
     diff -u $SPEC $SPEC.new || warning "There was some introduced system paths in the spec file"
+    mv $SPEC.new $SPEC
 done
 
 for DESKTOPFILE in $BUILDROOT/usr/share/applications/*.desktop ; do
