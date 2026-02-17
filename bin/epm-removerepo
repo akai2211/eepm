@@ -153,6 +153,25 @@ __epm_removerepo_alt()
 epm_removerepo()
 {
 
+# Handle copr/owner/project syntax for Fedora/RHEL
+case "$1" in
+    copr/*)
+        local owner_project="$(echo "$1" | sed 's|^copr/||')"
+        case $PMTYPE in
+            dnf-rpm|dnf5-rpm)
+                sudocmd dnf copr disable "$owner_project"
+                ;;
+            yum-rpm)
+                sudocmd yum copr disable "$owner_project"
+                ;;
+            *)
+                fatal "Copr repos are only supported on Fedora/RHEL systems (dnf/yum)"
+                ;;
+        esac
+        return
+        ;;
+esac
+
 case $BASEDISTRNAME in
     "alt")
         __epm_removerepo_alt "$@"
