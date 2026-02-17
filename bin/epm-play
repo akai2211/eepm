@@ -510,7 +510,7 @@ __epm_play_download_epm_file()
     local URL
     for URL in "https://eepm.ru/releases/$epmver/app-versions" "https://eepm.ru/app-versions" ; do
         info "Updating local IPFS DB in $eget_ipfs_db file from $URL/eget-ipfs-db.txt"
-        docmd eget -q --force -O "$target" "$URL/$file" && return
+        docmd eget -q -O "$target" "$URL/$file" && return
     done
 }
 
@@ -529,7 +529,7 @@ __epm_play_initialize_ipfs()
 
     # download and merge with local db
     local t
-    t=$(mktemp) || fatal
+    t=$(mktemp -u) || fatal
     remove_on_exit $t
     __epm_play_download_epm_file "$t" "eget-ipfs-db.txt" || warning "Can't update IPFS DB"
     if [ -s "$t" ] && [ -z "$EPM_IPFS_DB_UPDATE_SKIPPING" ] ; then
