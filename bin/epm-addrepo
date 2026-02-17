@@ -552,6 +552,30 @@ epm_addrepo()
 {
 local repo="$*"
 
+# Handle copr/owner/project syntax for Fedora/RHEL
+case "$1" in
+    copr/*)
+        local owner_project="$(echo "$1" | sed 's|^copr/||')"
+        case $PMTYPE in
+            dnf-rpm)
+                assure_exists dnf-plugins-core
+                sudocmd dnf copr enable -y "$owner_project"
+                ;;
+            dnf5-rpm)
+                sudocmd dnf copr enable -y "$owner_project"
+                ;;
+            yum-rpm)
+                assure_exists yum-plugin-copr
+                sudocmd yum copr enable -y "$owner_project"
+                ;;
+            *)
+                fatal "Copr repos are only supported on Fedora/RHEL systems (dnf/yum)"
+                ;;
+        esac
+        return
+        ;;
+esac
+
 case $PMTYPE in
     stplr)
         sudocmd stplr repo add "$@"
