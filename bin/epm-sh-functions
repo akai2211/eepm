@@ -1303,7 +1303,7 @@ remove_on_exit()
         if [ -d "$1" ] ; then
             to_clean_tmp_dirs="$to_clean_tmp_dirs
 $1"
-        elif [ -f "$1" ] ; then
+        else
             to_clean_tmp_files="$to_clean_tmp_files
 $1"
         fi
