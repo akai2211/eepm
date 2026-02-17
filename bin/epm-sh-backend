@@ -58,6 +58,13 @@ __get_repo_name() {
     [ "$trepo" = "SS" ] && trepo="Sisyphus"
     [ "$trepo" = "archive" ] && repo="archive $(echo "$arg" | cut -d/ -f2)" && name=$(echo "$arg" | cut -d/ -f3) && return
 
+    # Fedora Copr: copr/owner/project/package
+    if [ "$trepo" = "copr" ] ; then
+        repo="copr/$(echo "$arg" | cut -d/ -f2)/$(echo "$arg" | cut -d/ -f3)"
+        name="$(echo "$arg" | cut -d/ -f4)"
+        return
+    fi
+
     trepo="$(echo "$VALID_BRANCH" | tr ' ' '\n' | grep -w "^$trepo")"
     [ -n "$trepo" ] && repo="$trepo" && name=$(echo "$arg" | cut -d/ -f2) && return
 
@@ -233,6 +240,11 @@ __process_repo_arguments() {
         elif [ "$repo" = 'aur' ] ; then
             # Arch Linux AUR
             (PMTYPE=aur-pacman PPARGS=1 $func ${repo_groups[$repo]})
+        elif startwith "$repo" "copr/" ; then
+            # Fedora Copr: enable repo, then install
+            epm repo add "$repo"
+            epm update
+            (PPARGS=1 $func ${repo_groups[$repo]})
         else
             # ALT Linux: use temporary APT directory instead of modifying system repos
             __use_tmp_apt_for_branch "$repo" || return 1
