@@ -25,7 +25,7 @@ __epm_get_file_from_url()
 {
     local url="$1"
     local tmpfile
-    tmpfile=$(mktemp) || fatal
+    tmpfile=$(mktemp -u) || fatal
     remove_on_exit $tmpfile
     eget -O "$tmpfile" "$url" >/dev/null
     echo "$tmpfile"
