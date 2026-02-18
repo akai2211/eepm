@@ -186,7 +186,7 @@ __test_all_mirrors()
         local test_url="${url}/${__MIRROR_TEST_PATH}"
 
         # Show testing status (skip in tsv mode)
-        [ -z "$tsv" ] && printf "%-15s testing..." "$name" >&2
+        [ -z "$tsv" ] && printf "%-15s testing...  %s" "$name" "$url" >&2
 
         local speed
         speed=$(__measure_speed "$test_url")
@@ -194,7 +194,7 @@ __test_all_mirrors()
         formatted=$(__format_speed "$speed")
 
         # Clear line and show result (skip in tsv mode)
-        [ -z "$tsv" ] && printf "\r%-15s %12s\n" "$name" "$formatted" >&2
+        [ -z "$tsv" ] && printf "\r%-15s %12s     %s\n" "$name" "$formatted" "$url" >&2
 
         results="${results}${speed}|${name}|${url}
 "
