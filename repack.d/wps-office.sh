@@ -14,6 +14,7 @@ if [ "$PKGNAME" = "wps-office-cn" ] ; then
     add_conflicts wps-office
     add_conflicts wpsoffice
     add_conflicts wpsoffice-cn
+    add_provides "wps-office = %version"
 else
     add_conflicts wps-office-cn
     add_conflicts wpsoffice-cn
