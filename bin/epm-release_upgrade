@@ -571,7 +571,7 @@ epm_release_upgrade()
         return
         ;;
     "ROSA")
-        sudocmd dnf --refresh upgrade || fatal
+        sudocmd dnf $(subst_option non_interactive -y) --refresh upgrade || fatal
         #sudocmd dnf clean all
         DV=$(echo "$DISTRVERSION" | sed -e "s|\..*||")
         [ "$DV" = "2021" ] && DV=12
@@ -646,7 +646,7 @@ epm_release_upgrade()
         fi
 
         if [ "$DISTRNAME" = "RockyLinux" ] ; then
-            sudocmd dnf --refresh upgrade || fatal
+            sudocmd dnf $(subst_option non_interactive -y) --refresh upgrade || fatal
             #sudocmd dnf clean all
 
             DV=$(echo "$DISTRVERSION" | sed -e "s|\..*||")
@@ -670,10 +670,10 @@ epm_release_upgrade()
 
         info "Check https://fedoraproject.org/wiki/DNF_system_upgrade for an additional info"
         #docmd epm install epel-release yum-utils
-        sudocmd dnf --refresh upgrade || fatal
+        sudocmd dnf $(subst_option non_interactive -y) --refresh upgrade || fatal
         #sudocmd dnf clean all
         assure_exists dnf-plugin-system-upgrade
-        sudocmd dnf upgrade --refresh
+        sudocmd dnf $(subst_option non_interactive -y) upgrade --refresh
         local RELEASEVER="$1"
         [ -n "$RELEASEVER" ] || RELEASEVER=$(($DISTRVERSION + 1))
         #[ -n "$RELEASEVER" ] || fatal "Run me with new version"
