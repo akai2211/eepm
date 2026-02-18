@@ -22,7 +22,7 @@ load_helper epm-print
 
 __epm_filter_out_base_alt_reqs()
 {
-    grep -E -v "(^rpmlib\(|^/bin/sh|^/bin/bash|^rtld\(GNU_HASH\)|ld-linux)" | grep -E -v " or " | grep -E -v "\.so[.0-9]*\("
+    grep -E -v "(^rpmlib\(|^/bin/sh|^/bin/bash|^rtld\(GNU_HASH\)|ld-linux)" | grep -E -v " or " | sed -e 's/\(\.so[.0-9]*\)([^)]\+)/\1()/g' | sort -u
 }
 
 __epm_alt_rpm_requires()
