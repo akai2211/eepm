@@ -34,7 +34,7 @@ SHAREDIR=$PROGDIR
 # will replaced with /etc/eepm during install
 CONFIGDIR=$PROGDIR/../etc
 
-EPMVERSION="3.64.50"
+EPMVERSION="3.64.51"
 
 # package, single (file), pipe, git
 EPMMODE="package"
@@ -628,6 +628,14 @@ __get_package_for_command()
     esac
 }
 
+read_tty() {
+    if [ -c /dev/tty ] ; then
+        read -r "$@" </dev/tty
+    else
+        read -r "$@"
+    fi
+}
+
 confirm() {
     local response
     local prompt
@@ -637,7 +645,7 @@ confirm() {
         prompt="$(eval_gettext "Are you sure? [y/N]")"
     fi
     printf "%s " "$prompt" >&2
-    read -r response </dev/tty || return 1
+    read_tty response || return 1
     case $response in
         [yY][eE][sS]|[yY])
             true
@@ -657,7 +665,7 @@ confirm_yes() {
         prompt="$(eval_gettext "Are you sure? [Y/n]")"
     fi
     printf "%s " "$prompt" >&2
-    read -r response </dev/tty || return 1
+    read_tty response || return 1
     case $response in
         [nN][oO]|[nN])
             false
@@ -1275,7 +1283,7 @@ remove_on_exit()
         if [ -d "$1" ] ; then
             to_clean_tmp_dirs="$to_clean_tmp_dirs
 $1"
-        elif [ -f "$1" ] ; then
+        else
             to_clean_tmp_files="$to_clean_tmp_files
 $1"
         fi
@@ -2136,14 +2144,14 @@ _print_additional_usage
 ################# incorporate bin/distr_info #################
 internal_distr_info()
 {
-# 2007-2023 (c) Vitaly Lipatov <lav@etersoft.ru>
-# 2007-2023 (c) Etersoft
-# 2007-2023 Public domain
+# 2007-2026 (c) Vitaly Lipatov <lav@etersoft.ru>
+# 2007-2026 (c) Etersoft
+# 2007-2026 Public domain
 
 # You can set ROOTDIR to root system dir
 #ROOTDIR=
 
-PROGVERSION="20250206"
+PROGVERSION="20260206"
 
 # TODO: check /etc/system-release
 
@@ -3189,7 +3197,7 @@ local orig=''
 local EV=''
 [ -n "$EPMVERSION" ] && EV="(EPM version $EPMVERSION) "
 cat <<EOF
-distro_info v$PROGVERSION $EV: Copyright © 2007-2025 Etersoft
+distro_info v$PROGVERSION $EV: Copyright © 2007-2026 Etersoft
 
                        Pretty name (--pretty): $(print_pretty_name)
            (--distro-name / --distro-version): $DISTRO_NAME / $DISTRIB_FULL_RELEASE$orig
@@ -3234,8 +3242,8 @@ print_help()
     echo " --distro-name          - print distro name"
     echo " --distro-version       - print full version of the distro"
     echo " --full-version         - print full version of the distro"
-    echo " --codename (obsoleted) - print distro codename (focal for Ubuntu 20.04)"
-    echo " -r|--repo-name         - print repository name (focal for Ubuntu 20.04)"
+    echo " --codename (obsoleted) - print distro codename (f.i., focal for Ubuntu 20.04)"
+    echo " -r|--repo-name         - print repository name (f.i., focal for Ubuntu 20.04)"
     echo " --build-id             - print a string uniquely identifying the system image originally used as the installation base"
     echo " -V                     - print the utility version"
     echo "Run without args to print all information."
