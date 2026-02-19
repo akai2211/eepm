@@ -159,7 +159,14 @@ __setup_tmp_apt_dir()
     __EPM_APT_TMPDIR="$(mktemp -d)" || fatal
     remove_on_exit "$__EPM_APT_TMPDIR"
     mkdir -p "$__EPM_APT_TMPDIR/lists/partial" "$__EPM_APT_TMPDIR/sourceparts"
-    __EPM_APT_REPO_OPTIONS="-o Dir::Etc::sourcelist=$__EPM_APT_TMPDIR/sources.list -o Dir::Etc::sourceparts=$__EPM_APT_TMPDIR/sourceparts -o Dir::State::lists=$__EPM_APT_TMPDIR/lists -o Dir::Cache::pkgcache=$__EPM_APT_TMPDIR/pkgcache.bin -o Dir::Cache::srcpkgcache=$__EPM_APT_TMPDIR/srcpkgcache.bin"
+    cat > "$__EPM_APT_TMPDIR/apt.conf" <<EOF
+Dir::Etc::sourcelist "$__EPM_APT_TMPDIR/sources.list";
+Dir::Etc::sourceparts "$__EPM_APT_TMPDIR/sourceparts";
+Dir::State::lists "$__EPM_APT_TMPDIR/lists";
+Dir::Cache::pkgcache "$__EPM_APT_TMPDIR/pkgcache.bin";
+Dir::Cache::srcpkgcache "$__EPM_APT_TMPDIR/srcpkgcache.bin";
+EOF
+    __EPM_APT_REPO_OPTIONS="-c $__EPM_APT_TMPDIR/apt.conf"
 }
 
 # Output current system sources.list content to stdout
