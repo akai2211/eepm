@@ -6,4 +6,4 @@ SPEC="$2"
 
 . $(dirname $0)/common.sh
 
-add_requires "/usr/bin/wps"
+add_requires "wps-office"
