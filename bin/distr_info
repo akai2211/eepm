@@ -1,12 +1,12 @@
 #!/bin/sh
-# 2007-2023 (c) Vitaly Lipatov <lav@etersoft.ru>
-# 2007-2023 (c) Etersoft
-# 2007-2023 Public domain
+# 2007-2026 (c) Vitaly Lipatov <lav@etersoft.ru>
+# 2007-2026 (c) Etersoft
+# 2007-2026 Public domain
 
 # You can set ROOTDIR to root system dir
 #ROOTDIR=
 
-PROGVERSION="20250206"
+PROGVERSION="20260206"
 
 # TODO: check /etc/system-release
 
@@ -1052,7 +1052,7 @@ local orig=''
 local EV=''
 [ -n "$EPMVERSION" ] && EV="(EPM version $EPMVERSION) "
 cat <<EOF
-distro_info v$PROGVERSION $EV: Copyright © 2007-2025 Etersoft
+distro_info v$PROGVERSION $EV: Copyright © 2007-2026 Etersoft
 
                        Pretty name (--pretty): $(print_pretty_name)
            (--distro-name / --distro-version): $DISTRO_NAME / $DISTRIB_FULL_RELEASE$orig
@@ -1097,8 +1097,8 @@ print_help()
     echo " --distro-name          - print distro name"
     echo " --distro-version       - print full version of the distro"
     echo " --full-version         - print full version of the distro"
-    echo " --codename (obsoleted) - print distro codename (focal for Ubuntu 20.04)"
-    echo " -r|--repo-name         - print repository name (focal for Ubuntu 20.04)"
+    echo " --codename (obsoleted) - print distro codename (f.i., focal for Ubuntu 20.04)"
+    echo " -r|--repo-name         - print repository name (f.i., focal for Ubuntu 20.04)"
     echo " --build-id             - print a string uniquely identifying the system image originally used as the installation base"
     echo " -V                     - print the utility version"
     echo "Run without args to print all information."
