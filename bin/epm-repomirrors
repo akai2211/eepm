@@ -240,7 +240,7 @@ __select_mirror_fzf()
         echo "" >&2
         printf "%s" "$(eval_gettext "Enter number to switch mirror, or press Enter to cancel"): " >&2
         local choice
-        read -r choice </dev/tty || return 1
+        read_tty choice || return 1
         [ -z "$choice" ] && return 1
         local line
         line=$(echo "$results" | sed -n "${choice}p")

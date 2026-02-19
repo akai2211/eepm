@@ -619,6 +619,15 @@ __get_package_for_command()
     esac
 }
 
+# read from /dev/tty if available, otherwise from stdin
+read_tty() {
+    if [ -c /dev/tty ] ; then
+        read -r "$@" </dev/tty
+    else
+        read -r "$@"
+    fi
+}
+
 confirm() {
     local response
     local prompt
@@ -628,7 +637,7 @@ confirm() {
         prompt="$(eval_gettext "Are you sure? [y/N]")"
     fi
     printf "%s " "$prompt" >&2
-    read -r response </dev/tty || return 1
+    read_tty response || return 1
     case $response in
         [yY][eE][sS]|[yY])
             true
@@ -649,7 +658,7 @@ confirm_yes() {
         prompt="$(eval_gettext "Are you sure? [Y/n]")"
     fi
     printf "%s " "$prompt" >&2
-    read -r response </dev/tty || return 1
+    read_tty response || return 1
     case $response in
         [nN][oO]|[nN])
             false
